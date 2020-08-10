@@ -183,10 +183,10 @@ text_plot_Name <- ggplot(PCA_data, aes(x = PC1, y = PC2)) +
   geom_text(aes(label = Name), size = 4)+
   labs(title = "LT07 is an outlier")
   
-ggsave(filename = "Results/PCA_all_samples.png", plot = text_plot_Name, width = 12, height = 10, dpi = 300, units = "cm")
+ggsave(filename = "results/PCA_all_samples.png", plot = text_plot_Name, width = 12, height = 10, dpi = 300, units = "cm")
 #LT07 is an outlier
 
-#####Repeat analysis for dataset excluding LT07
+#####Repeat analysis for dataset excluding LT07###############
 #read in the metadata
 lessLT07_metadata <- read_csv("data/ilrun_metadata_siRNA.csv") %>% 
   mutate(Name = str_extract(Sample, "^....")) %>%
@@ -194,34 +194,32 @@ lessLT07_metadata <- read_csv("data/ilrun_metadata_siRNA.csv") %>%
   
 
 #join with the counts data 
-all_expression <- read_csv("results/DESeq2_ilrun_siRNA_all_normalized_counts.csv") %>%
-  rename(gene_locus = X1) %>% 
+lessLT07_expression <- read_csv("results/DESeq2_ilrun_siRNA_all_normalized_counts.csv") %>%
+  rename(gene_locus = X1) %>%
+  select(-LT07_L001, -LT07_L002) %>% 
   gather(Sample, expression, -gene_locus) %>%
-  left_join(all_metadata, by = "Sample")
+  left_join(lessLT07_metadata, by = "Sample")
 
 #scale gene expression for all samples 
-scaled_genes <- all_expression %>%
+lessLT07_scaled_genes <- lessLT07_expression %>%
   spread(gene_locus, expression) %>%
-  select(-Infection, -siRNA, -timepoint, -Condition, -Lane) %>% 
+  select(-Infection, -siRNA, -timepoint, -Condition, -Lane, -Name) %>% 
   column_to_rownames("Sample") %>% 
   scale()
 
 #use the prcomp function on scaled samples
-pca_genes <- prcomp(scaled_genes)
+lessLT07_pca_genes <- prcomp(lessLT07_scaled_genes)
 
 #tidy data frame for plotting
-PCA_data <- pca_genes$x %>% 
+PCA_data_lessLT07 <- lessLT07_pca_genes$x %>% 
   as_tibble(rownames = "Sample") %>%
   gather(PC, expression, -Sample) %>% 
   left_join(all_metadata, by = "Sample") %>%
   spread(PC, expression)
 
 
-text_plot <- ggplot(PCA_data, aes(x = PC1, y = PC2)) +
-  geom_text(aes(label = Infection, color = siRNA), size = 6) +
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 16, face = "bold"),
-        title = element_text(size = 14, face = "bold"),
-        legend.text = element_text(size = 14)) +
-  labs(title = "Principle Component Analysis")
-
+text_plot_lessLT07 <- ggplot(PCA_data_lessLT07, aes(x = PC1, y = PC2)) +
+  geom_point(aes(shape = siRNA, color = Infection), size = 3)+
+  labs(title = "Principle Component Analysis less LT07")
+  
+ggsave(filename = "results/PCA_lessLT07.png", plot = text_plot_lessLT07, width = 12, height = 10, dpi = 300, units = "cm")
