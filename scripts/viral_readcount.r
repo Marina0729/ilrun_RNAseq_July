@@ -11,7 +11,6 @@
 library(tidyverse)
 library(dplyr)
 library(readr)
-install.packages("vroom")
 library(vroom)
 
 
@@ -35,20 +34,22 @@ coverview_ilrun_SARSCOV2 <- vroom(list_of_coverview_summary_files, id = "FileNam
   select(-Sample_Lane, -Lane.y) %>% 
   filter(Infection != "NA")
 
-
-
 viral_reads_ilrun <- ggplot(coverview_ilrun_SARSCOV2, aes(x = Infection, y = RC, color = siRNA)) +
   geom_boxplot()+
   scale_y_log10()+
   labs(title = "SARS-CoV2 read counts")
-
 
 ggsave(filename = "results/viral_reads_ilrun_july.png", plot = viral_reads_ilrun, width = 12, height = 10, dpi = 300, units = "cm")
 
-viral_reads_ilrun <- ggplot(coverview_ilrun_SARSCOV2, aes(x = Infection, y = RC, color = siRNA)) +
+#want to just plot the infected samples
+
+coverview_ilrun_SARSCOV2_infected <- coverview_ilrun_SARSCOV2 %>% 
+  filter(RC > 1000 )
+
+viral_reads_ilrun_infected <- ggplot(coverview_ilrun_SARSCOV2_infected, aes(x = timepoint, y = RC, color = siRNA)) +
   geom_boxplot()+
   scale_y_log10()+
   labs(title = "SARS-CoV2 read counts")
 
 
-ggsave(filename = "results/viral_reads_ilrun.png", plot = viral_reads_ilrun, width = 12, height = 10, dpi = 300, units = "cm")
+ggsave(filename = "results/viral_reads_ilrun_infected.png", plot = viral_reads_ilrun_infected, width = 12, height = 10, dpi = 300, units = "cm")
