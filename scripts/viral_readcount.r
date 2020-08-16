@@ -18,6 +18,13 @@ library(vroom)
 list_of_coverview_summary_files <- list.files(path = ".", recursive = TRUE,
                             pattern = "\\.txt$", 
                             full.names = TRUE)
+
+####total read counts for normalisation
+
+
+total_counts <- read.csv("results/total_counts.csv")
+counts_18S <- read.csv("results/counts_18s.csv")
+
 #read in the metadata
 metadata_viral_readcount <- read.csv("data/ilrun_metadata_siRNA.csv") %>% 
   rename(Sample_Lane = Sample)

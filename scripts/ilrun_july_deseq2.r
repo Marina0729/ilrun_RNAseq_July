@@ -18,38 +18,75 @@ rm(list=ls())
 df <- read.csv("data/ilrun_counts_siRNA.csv", header=TRUE, row.names=1)
 md <- read.csv("data/ilrun_metadata_siRNA.csv", header=TRUE, row.names=1)
 
+df_LT07 <- read.csv("data/ilrun_counts_siRNA.csv", header=TRUE, row.names=1) %>% 
+  select(-LT07_L001, -LT07_L002)
+md_LT07 <- read.csv("data/ilrun_metadata_siRNA_LT07.csv", header=TRUE, row.names=1)
+
 all(rownames(md) == colnames (df))
+all(rownames(md_LT07) == colnames (df_LT07))
 
 dim(df)
+dim(df_LT07)
+
 
 # Calculate counts per million.
 # Filter rows: at least 3 samples must have at least 1 cpm.
 # Retain rows according to 'keep' and nothing on columns.
 cpm <- apply(df, 2, function(x) (x/sum(x))*1000000)
-keep <- rowSums( cpm >= 1 ) >=6
-df <- df[ keep, ]
+keep <- rowSums( cpm >= 1 ) >=4
+df_filtered <- df[ keep, ]
+
+cpm_LT07 <- apply(df_LT07, 2, function(x) (x/sum(x))*1000000)
+keep_LT07 <- rowSums( cpm_LT07 >= 1 ) >=4
+df_filtered_LT07 <- df_LT07[ keep_LT07, ]
+
+dim(df_filtered)
+dim(df_filtered_LT07)
+
 
 # Construct a SummarizedExperiment object:
 dds <- DESeqDataSetFromMatrix(
-  countData = df,
+  countData = df_filtered,
   colData = md,
-  design = ~ Condition + Lane) # ~ is representative of 'by', i.e. compare by condition, sex.
+  design = ~ Condition + Lane) # ~ is representative of 'by', i.e. compare by condition
+
+dds_LT07 <- DESeqDataSetFromMatrix(
+  countData = df_filtered_LT07,
+  colData = md_LT07,
+  design = ~ Condition + Lane) # ~ is representative of 'by', i.e. compare by condition
 
 # Perform DE testing:
 dds <- DESeq(dds)
+dds_LT07 <- DESeq(dds_LT07)
 
 # Output normalized counts:
 norm_counts <- counts (dds, normalized=TRUE)
 write.csv(norm_counts, file="results/DESeq2_ilrun_siRNA_all_normalized_counts.csv")
 
+norm_counts_LT07 <- counts (dds_LT07, normalized=TRUE)
+write.csv(norm_counts_LT07, file="results/DESeq2_ilrun_siRNA_all_normalized_counts_LT07.csv")
+
 
 # Convert results to dataframe:
-Inf_NEG24vInf_ILRUN24 <- results(dds, contrast=c("Condition", "Infected_NEG_24hr", "Infected_ILRUN_24hr"))
-Uninf_NEG24vUninf_ILRUN24 <- results( dds, contrast=c("Condition", "Uninfected_NEG_24hr", "Uninfected_ILRUN_24hr"))
-Uninf_NEG6vInf_NEG6 <- results(dds, contrast=c("Condition", "Uninfected_NEG_6hr", "Infected_NEG_6hr"))
-Uninf_NEG24vInf_NEG24 <- results(dds, contrast=c("Condition", "Uninfected_NEG_24hr", "Infected_NEG_24hr"))
-Uninf_ILRUN6vInf_ILRUN6 <- results(dds, contrast=c("Condition", "Uninfected_ILRUN_6hr", "Infected_ILRUN_6hr"))
-Uninf_ILRUN24vInf_ILRUN24 <- results(dds, contrast=c("Condition", "Uninfected_ILRUN_24hr", "Infected_ILRUN_24hr"))
+CoV2genesNEG6hr <- results(dds, contrast = c("Condition", "Uninfected_NEG_6hr", "Infected_NEG_6hr"))
+CoV2genesNEG24hr <- results(dds, contrast = c("Condition", "Uninfected_NEG_24hr", "Infected_NEG_24hr"))
+CoV2genesNEG6hr <- results(dds, contrast = c("Condition", "Uninfected_ILRUN_6hr", "Infected_ILRUN_6hr"))
+CoV2genesNEG24hr <- results(dds, contrast = c("Condition", "Uninfected_ILRUN_24hr", "Infected_ILRUN_24hr"))
+ILRUNgenesUninf6hr <- results(dds, contrast = c("Condition","Uninfected_NEG_6hr", "Uninfected_ILRUN_6hr"))
+ILRUNgenesUninf24hr <- results(dds, contrast = c("Condition","Uninfected_NEG_24hr", "Uninfected_ILRUN_24hr"))
+ILRUNgenesInf6hr <- results(dds, contrast = c("Condition","Infected_NEG_6hr", "Infected_ILRUN_6hr"))
+ILRUNgenesInf24hr <- results(dds, contrast = c("Condition","Infected_NEG_24hr", "Infected_ILRUN_24hr"))
+
+
+# Less LT07 Convert results to dataframe:
+CoV2genesNEG6hr_LT07 <- results(dds_LT07, contrast = c("Condition", "Uninfected_NEG_6hr", "Infected_NEG_6hr"))
+CoV2genesNEG24hr_LT07 <- results(dds_LT07, contrast = c("Condition", "Uninfected_NEG_24hr", "Infected_NEG_24hr"))
+CoV2genesILRUN6hr_LT07 <- results(dds_LT07, contrast = c("Condition", "Uninfected_ILRUN_6hr", "Infected_ILRUN_6hr"))
+CoV2genesILRUN24hr_LT07 <- results(dds_LT07, contrast = c("Condition", "Uninfected_ILRUN_24hr", "Infected_ILRUN_24hr"))
+ILRUNgenesUninf6hr_LT07 <- results(dds_LT07, contrast = c("Condition","Uninfected_NEG_6hr", "Uninfected_ILRUN_6hr"))
+ILRUNgenesUninf24hr_LT07 <- results(dds_LT07, contrast = c("Condition","Uninfected_NEG_24hr", "Uninfected_ILRUN_24hr"))
+ILRUNgenesInf6hr_LT07 <- results(dds_LT07, contrast = c("Condition","Infected_NEG_6hr", "Infected_ILRUN_6hr"))
+ILRUNgenesInf24hr_LT07 <- results(dds_LT07, contrast = c("Condition","Infected_NEG_24hr", "Infected_ILRUN_24hr"))
 
 # Set adjusted p-value significance (padj) threshold:
 alpha <- c( 0.05 )
@@ -59,92 +96,333 @@ beta <- c( 1 )
 # Set baseMean threshold:
 gamma <- c( 10 )
 
-# Filter Infectected siNEG versus siILRUN:
+########################## CoV2genesNEG6hr #####################################################################
 # 'Which' provides positions of 'TRUE' values.
-sigInf_NEG24vInf_ILRUN24 <- Inf_NEG24vInf_ILRUN24[ which( Inf_NEG24vInf_ILRUN24$padj < alpha), ]
+sigCoV2genesNEG6hr_LT07 <- CoV2genesNEG6hr_LT07[ which( CoV2genesNEG6hr_LT07$padj < alpha), ]
 # Slices out rows where the adjusted p-value is <0.05.
-sigInf_NEG24vInf_ILRUN24 <- sigInf_NEG24vInf_ILRUN24[ which( abs(sigInf_NEG24vInf_ILRUN24$log2FoldChange) > beta), ]
+sigCoV2genesNEG6hr_LT07 <- sigCoV2genesNEG6hr_LT07[ which( abs(sigCoV2genesNEG6hr_LT07$log2FoldChange) > beta), ]
 # Slices out rows where the fold change is above 2 and below -2.
 # Abs=absolute, tells it to filter things above 2, ignoring whether value is positive or negative.
-sigInf_NEG24vInf_ILRUN24 <- sigInf_NEG24vInf_ILRUN24[ which(sigInf_NEG24vInf_ILRUN24$baseMean > gamma), ]
-write.csv(sigInf_NEG24vInf_ILRUN24, file="results/sigInf_NEG24vInf_ILRUN24.csv")
+sigCoV2genesNEG6hr_LT07 <- sigCoV2genesNEG6hr_LT07[ which(sigCoV2genesNEG6hr_LT07$baseMean > gamma), ]
+write.csv(sigCoV2genesNEG6hr_LT07, file="results/sigCoV2genesNEG6hr_LT07.csv")
 # Slices out rows above an average count of 10 reads (anything below is rubbish).
-Inf_NEG24vInf_ILRUN24_hits <- rownames(sigInf_NEG24vInf_ILRUN24)
-length(Inf_NEG24vInf_ILRUN24_hits)
-write.csv(norm_counts[Inf_NEG24vInf_ILRUN24_hits, ], file="results/DESeq2_sig_Inf_NEG24vInf_ILRUN24_normalized_counts.csv")
+CoV2genesNEG6hr_LT07_hits <- rownames(sigCoV2genesNEG6hr_LT07)
+length(CoV2genesNEG6hr_LT07_hits)
+write.csv(norm_counts[CoV2genesNEG6hr_LT07_hits, ], file="results/DESeq2_sig_CoV2genesNEG6hr_LT07_normalized_counts.csv")
+read_csv("results/sigCoV2genesNEG6hr_LT07.csv") %>% 
+  select("X1") %>% 
+  rename(gene = X1) %>% 
+  separate(col =gene, into = c("name", "XLOC", "gene"), sep ="_") %>% 
+  select(gene) %>% 
+  filter(gene != "Unknown") %>% 
+  write.csv("results/CoV2genesNEG6hr_LT07_david.csv")
+#making a PCA  
+#read in the metadata
+CoV2genesNEG6hr_metadata <- read_csv("data/ilrun_metadata_siRNA_LT07.csv") %>% 
+  filter(siRNA == "NEG") %>% 
+  filter(timepoint == "6hr") %>% 
+  filter(Lane == "L001") %>%
+  mutate(Name = str_extract(Sample, "^...."))
 
-# Filter Uninfectected siNEG versus siILRUN:
+#join with the counts data 
+CoV2genesNEG6hr_expression <- read_csv("results/DESeq2_ilrun_siRNA_all_normalized_counts_LT07.csv") %>% 
+  rename(gene_locus = X1) %>%
+  gather(Sample, expression, -gene_locus) %>%
+  filter(str_detect(Sample, 'L001')) %>% 
+  right_join(CoV2genesNEG6hr_metadata, by = "Sample") 
+
+#scale gene expression for all samples 
+CoV2genesNEG6hr_expression_scaled_genes <- CoV2genesNEG6hr_expression %>%
+  spread(gene_locus, expression) %>%
+  select(-Infection, -siRNA, -timepoint, -Condition, -Lane, -Name) %>% 
+  column_to_rownames("Sample") %>% 
+  scale()
+
+#use the prcomp function on scaled samples
+CoV2genesNEG6hr_pca_genes <- prcomp(CoV2genesNEG6hr_expression_scaled_genes)
+
+#tidy data frame for plotting
+PCA_data_CoV2genesNEG6hr_pca_genes <- CoV2genesNEG6hr_pca_genes$x %>% 
+  as_tibble(rownames = "Sample") %>%
+  gather(PC, expression, -Sample) %>% 
+  left_join(CoV2genesNEG6hr_metadata, by = "Sample") %>%
+  spread(PC, expression)
+
+plot_CoV2genesNEG6hr <- ggplot(PCA_data_CoV2genesNEG6hr_pca_genes, aes(x = PC1, y = PC2)) +
+  geom_point(aes(color = Infection), size = 6)+
+  geom_text(aes(label = Name), size = 4) +
+  labs(title = "Principle Component Analysis CoV2genesNEG6hr")
+
+ggsave(filename = "results/PCA_plot_CoV2genesNEG6hr.png", plot = plot_CoV2genesNEG6hr, width = 20, height = 20, dpi = 300, units = "cm")
+
+
+########################## CoV2genesNEG24hr #####################################################################
 # 'Which' provides positions of 'TRUE' values.
-sigUninf_NEG24vUninf_ILRUN24 <- Uninf_NEG24vUninf_ILRUN24[ which( Uninf_NEG24vUninf_ILRUN24$padj < alpha), ]
+sigCoV2genesNEG24hr_LT07 <- CoV2genesNEG24hr_LT07[ which( CoV2genesNEG24hr_LT07$padj < alpha), ]
 # Slices out rows where the adjusted p-value is <0.05.
-sigUninf_NEG24vUninf_ILRUN24 <- sigUninf_NEG24vUninf_ILRUN24[ which( abs(sigUninf_NEG24vUninf_ILRUN24$log2FoldChange) > beta), ]
+sigCoV2genesNEG24hr_LT07 <- sigCoV2genesNEG24hr_LT07[ which( abs(sigCoV2genesNEG24hr_LT07$log2FoldChange) > beta), ]
 # Slices out rows where the fold change is above 2 and below -2.
 # Abs=absolute, tells it to filter things above 2, ignoring whether value is positive or negative.
-sigUninf_NEG24vUninf_ILRUN24 <- sigUninf_NEG24vUninf_ILRUN24[ which(sigUninf_NEG24vUninf_ILRUN24$baseMean > gamma), ]
-write.csv(sigUninf_NEG24vUninf_ILRUN24, file="results/sigUninf_NEG24vUninf_ILRUN24.csv")
+sigCoV2genesNEG24hr_LT07 <- sigCoV2genesNEG24hr_LT07[ which(sigCoV2genesNEG24hr_LT07$baseMean > gamma), ]
+write.csv(sigCoV2genesNEG24hr_LT07, file="results/sigCoV2genesNEG24hr_LT07.csv")
 # Slices out rows above an average count of 10 reads (anything below is rubbish).
-Uninf_NEG24vUninf_ILRUN24_hits <- rownames(sigUninf_NEG24vUninf_ILRUN24)
-length(Uninf_NEG24vUninf_ILRUN24_hits)
-write.csv(norm_counts[Uninf_NEG24vUninf_ILRUN24_hits, ], file="results/DESeq2_sig_Uninf_NEG24vUninf_ILRUN24_normalized_counts.csv")
+CoV2genesNEG24hr_LT07_hits <- rownames(sigCoV2genesNEG24hr_LT07)
+length(CoV2genesNEG24hr_LT07_hits)
+write.csv(norm_counts[CoV2genesNEG24hr_LT07_hits, ], file="results/DESeq2_sig_CoV2genesNEG24hr_LT07_normalized_counts.csv")
+read_csv("results/sigCoV2genesNEG24hr_LT07.csv") %>% 
+  select("X1") %>% 
+  rename(gene = X1) %>% 
+  separate(col =gene, into = c("name", "XLOC", "gene"), sep ="_") %>% 
+  select(gene) %>% 
+  filter(gene != "Unknown") %>%
+  write.csv("results/CoV2genesNEG24hr_LT07_david.csv")
+#making a PCA  
+#read in the metadata
+CoV2genesNEG24hr_metadata <- read_csv("data/ilrun_metadata_siRNA_LT07.csv") %>% 
+  filter(siRNA == "NEG") %>% 
+  filter(timepoint == "24hr") %>% 
+  filter(Lane == "L001") %>%
+  mutate(Name = str_extract(Sample, "^...."))
+
+#join with the counts data 
+CoV2genesNEG24hr_expression <- read_csv("results/DESeq2_ilrun_siRNA_all_normalized_counts_LT07.csv") %>% 
+  rename(gene_locus = X1) %>%
+  gather(Sample, expression, -gene_locus) %>%
+  filter(str_detect(Sample, 'L001')) %>% 
+  right_join(CoV2genesNEG24hr_metadata, by = "Sample") 
+
+#scale gene expression for all samples 
+CoV2genesNEG24hr_expression_scaled_genes <- CoV2genesNEG24hr_expression %>%
+  spread(gene_locus, expression) %>%
+  select(-Infection, -siRNA, -timepoint, -Condition, -Lane, -Name) %>% 
+  column_to_rownames("Sample") %>% 
+  scale()
+
+#use the prcomp function on scaled samples
+CoV2genesNEG24hr_pca_genes <- prcomp(CoV2genesNEG24hr_expression_scaled_genes)
+
+#tidy data frame for plotting
+PCA_data_CoV2genesNEG24hr_pca_genes <- CoV2genesNEG24hr_pca_genes$x %>% 
+  as_tibble(rownames = "Sample") %>%
+  gather(PC, expression, -Sample) %>% 
+  left_join(CoV2genesNEG24hr_metadata, by = "Sample") %>%
+  spread(PC, expression)
+
+plot_CoV2genesNEG24hr <- ggplot(PCA_data_CoV2genesNEG24hr_pca_genes, aes(x = PC1, y = PC2)) +
+  geom_point(aes(color = Infection), size = 6)+
+  geom_text(aes(label = Name), size = 4) +
+  labs(title = "Principle Component Analysis CoV2genesNEG24hr")
+
+ggsave(filename = "results/PCA_plot_CoV2genesNEG24hr.png", plot = plot_CoV2genesNEG24hr, width = 20, height = 20, dpi = 300, units = "cm")
 
 
-# Filter Uninfectected siNEG versus Infected siNEG 6hr:
+########################## CoV2genesILRUN6hr #####################################################################
 # 'Which' provides positions of 'TRUE' values.
-sigUninf_NEG6vInf_NEG6 <- Uninf_NEG6vInf_NEG6[ which( Uninf_NEG6vInf_NEG6$padj < alpha), ]
+sigCoV2genesILRUN6hr_LT07 <- CoV2genesILRUN6hr_LT07[ which( CoV2genesILRUN6hr_LT07$padj < alpha), ]
 # Slices out rows where the adjusted p-value is <0.05.
-sigUninf_NEG6vInf_NEG6 <- sigUninf_NEG6vInf_NEG6[ which( abs(sigUninf_NEG6vInf_NEG6$log2FoldChange) > beta), ]
+sigCoV2genesILRUN6hr_LT07 <- sigCoV2genesILRUN6hr_LT07[ which( abs(sigCoV2genesILRUN6hr_LT07$log2FoldChange) > beta), ]
 # Slices out rows where the fold change is above 2 and below -2.
 # Abs=absolute, tells it to filter things above 2, ignoring whether value is positive or negative.
-sigUninf_NEG6vInf_NEG6 <- sigUninf_NEG6vInf_NEG6[ which(sigUninf_NEG6vInf_NEG6$baseMean > gamma), ]
-write.csv(sigUninf_NEG6vInf_NEG6, file="results/sigUninf_NEG6vInf_NEG6.csv")
+sigCoV2genesILRUN6hr_LT07 <- sigCoV2genesILRUN6hr_LT07[ which(sigCoV2genesILRUN6hr_LT07$baseMean > gamma), ]
+write.csv(sigCoV2genesILRUN6hr_LT07, file="results/sigCoV2genesILRUN6hr_LT07.csv")
 # Slices out rows above an average count of 10 reads (anything below is rubbish).
-Uninf_NEG6vInf_NEG6_hits <- rownames(sigUninf_NEG6vInf_NEG6)
-length(Uninf_NEG6vInf_NEG6_hits)
-write.csv(norm_counts[Uninf_NEG6vInf_NEG6_hits, ], file="results/DESeq2_sig_Uninf_NEG6vInf_NEG6_normalized_counts.csv")
+CoV2genesILRUN6hr_LT07_hits <- rownames(sigCoV2genesILRUN6hr_LT07)
+length(CoV2genesILRUN6hr_LT07_hits)
+write.csv(norm_counts[CoV2genesILRUN6hr_LT07_hits, ], file="results/DESeq2_sig_CoV2genesILRUN6hr_LT07_normalized_counts.csv")
+read_csv("results/sigCoV2genesILRUN6hr_LT07.csv") %>% 
+  select("X1") %>% 
+  rename(gene = X1) %>% 
+  separate(col =gene, into = c("name", "XLOC", "gene"), sep ="_") %>% 
+  select(gene) %>% 
+  filter(gene != "Unknown") %>% 
+  write.csv("results/CoV2genesILRUN6hr_LT07_david.csv")
+#making a PCA  
+#read in the metadata
+CoV2genesILRUN6hr_metadata <- read_csv("data/ilrun_metadata_siRNA_LT07.csv") %>% 
+  filter(siRNA == "ILRUN") %>% 
+  filter(timepoint == "6hr") %>% 
+  filter(Lane == "L001") %>%
+  mutate(Name = str_extract(Sample, "^...."))
+
+#join with the counts data 
+CoV2genesILRUN6hr_expression <- read_csv("results/DESeq2_ilrun_siRNA_all_normalized_counts_LT07.csv") %>% 
+  rename(gene_locus = X1) %>%
+  gather(Sample, expression, -gene_locus) %>%
+  filter(str_detect(Sample, 'L001')) %>% 
+  right_join(CoV2genesILRUN6hr_metadata, by = "Sample") 
+
+#scale gene expression for all samples 
+CoV2genesILRUN6hr_expression_scaled_genes <- CoV2genesILRUN6hr_expression %>%
+  spread(gene_locus, expression) %>%
+  select(-Infection, -siRNA, -timepoint, -Condition, -Lane, -Name) %>% 
+  column_to_rownames("Sample") %>% 
+  scale()
+
+#use the prcomp function on scaled samples
+CoV2genesILRUN6hr_pca_genes <- prcomp(CoV2genesILRUN6hr_expression_scaled_genes)
+
+#tidy data frame for plotting
+PCA_data_CoV2genesILRUN6hr_pca_genes <- CoV2genesILRUN6hr_pca_genes$x %>% 
+  as_tibble(rownames = "Sample") %>%
+  gather(PC, expression, -Sample) %>% 
+  left_join(CoV2genesILRUN6hr_metadata, by = "Sample") %>%
+  spread(PC, expression)
+
+plot_CoV2genesILRUN6hr <- ggplot(PCA_data_CoV2genesILRUN6hr_pca_genes, aes(x = PC1, y = PC2)) +
+  geom_point(aes(color = Infection), size = 6)+
+  geom_text(aes(label = Name), size = 4) +
+  labs(title = "Principle Component Analysis CoV2genesILRUN6hr")
+
+ggsave(filename = "results/PCA_plot_CoV2genesILRUN6hr.png", plot = plot_CoV2genesILRUN6hr, width = 20, height = 20, dpi = 300, units = "cm")
 
 
-# Filter Uninfectected siNEG versus Infected siNEG 24hr:
+########################## CoV2genesILRUN24hr #####################################################################
 # 'Which' provides positions of 'TRUE' values.
-sigUninf_NEG24vInf_NEG24 <- Uninf_NEG24vInf_NEG24[ which( Uninf_NEG24vInf_NEG24$padj < alpha), ]
+sigCoV2genesILRUN24hr_LT07 <- CoV2genesILRUN24hr_LT07[ which( CoV2genesILRUN24hr_LT07$padj < alpha), ]
 # Slices out rows where the adjusted p-value is <0.05.
-sigUninf_NEG24vInf_NEG24 <- sigUninf_NEG24vInf_NEG24[ which( abs(sigUninf_NEG24vInf_NEG24$log2FoldChange) > beta), ]
+sigCoV2genesILRUN24hr_LT07 <- sigCoV2genesILRUN24hr_LT07[ which( abs(sigCoV2genesILRUN24hr_LT07$log2FoldChange) > beta), ]
 # Slices out rows where the fold change is above 2 and below -2.
 # Abs=absolute, tells it to filter things above 2, ignoring whether value is positive or negative.
-sigUninf_NEG24vInf_NEG24 <- sigUninf_NEG24vInf_NEG24[ which(sigUninf_NEG24vInf_NEG24$baseMean > gamma), ]
-write.csv(sigUninf_NEG24vInf_NEG24, file="results/sigUninf_NEG24vInf_NEG24.csv")
+sigCoV2genesILRUN24hr_LT07 <- sigCoV2genesILRUN24hr_LT07[ which(sigCoV2genesILRUN24hr_LT07$baseMean > gamma), ]
+write.csv(sigCoV2genesILRUN24hr_LT07, file="results/sigCoV2genesILRUN24hr_LT07.csv")
 # Slices out rows above an average count of 10 reads (anything below is rubbish).
-Uninf_NEG24vInf_NEG24_hits <- rownames(sigUninf_NEG24vInf_NEG24)
-length(Uninf_NEG24vInf_NEG24_hits)
-write.csv(norm_counts[Uninf_NEG24vInf_NEG24_hits, ], file="results/DESeq2_sig_Uninf_NEG24vInf_NEG24_normalized_counts.csv")
+CoV2genesILRUN24hr_LT07_hits <- rownames(sigCoV2genesILRUN24hr_LT07)
+length(CoV2genesILRUN24hr_LT07_hits)
+write.csv(norm_counts[CoV2genesILRUN24hr_LT07_hits, ], file="results/DESeq2_sig_CoV2genesILRUN24hr_LT07_normalized_counts.csv")
+read_csv("results/sigCoV2genesILRUN24hr_LT07.csv") %>% 
+  select("X1") %>% 
+  rename(gene = X1) %>% 
+  separate(col =gene, into = c("name", "XLOC", "gene"), sep ="_") %>% 
+  select(gene) %>% 
+  filter(gene != "Unknown") %>% 
+  write.csv("results/CoV2genesILRUN24hr_LT07_david.csv")
+#making a PCA  
+#read in the metadata
+CoV2genesILRUN24hr_metadata <- read_csv("data/ilrun_metadata_siRNA_LT07.csv") %>% 
+  filter(siRNA == "ILRUN") %>% 
+  filter(timepoint == "24hr") %>% 
+  filter(Lane == "L001") %>%
+  mutate(Name = str_extract(Sample, "^...."))
 
-# Filter Uninfectected siILRUN versus Infected siILRUN 6hr:
+#join with the counts data 
+CoV2genesILRUN24hr_expression <- read_csv("results/DESeq2_ilrun_siRNA_all_normalized_counts_LT07.csv") %>% 
+  rename(gene_locus = X1) %>%
+  gather(Sample, expression, -gene_locus) %>%
+  filter(str_detect(Sample, 'L001')) %>% 
+  right_join(CoV2genesILRUN24hr_metadata, by = "Sample") 
+
+#scale gene expression for all samples 
+CoV2genesILRUN24hr_expression_scaled_genes <- CoV2genesILRUN24hr_expression %>%
+  spread(gene_locus, expression) %>%
+  select(-Infection, -siRNA, -timepoint, -Condition, -Lane, -Name) %>% 
+  column_to_rownames("Sample") %>% 
+  scale()
+
+#use the prcomp function on scaled samples
+CoV2genesILRUN24hr_pca_genes <- prcomp(CoV2genesILRUN24hr_expression_scaled_genes)
+
+#tidy data frame for plotting
+PCA_data_CoV2genesILRUN24hr_pca_genes <- CoV2genesILRUN24hr_pca_genes$x %>% 
+  as_tibble(rownames = "Sample") %>%
+  gather(PC, expression, -Sample) %>% 
+  left_join(CoV2genesILRUN24hr_metadata, by = "Sample") %>%
+  spread(PC, expression)
+
+plot_CoV2genesILRUN24hr <- ggplot(PCA_data_CoV2genesILRUN24hr_pca_genes, aes(x = PC1, y = PC2)) +
+  geom_point(aes(color = Infection), size = 6)+
+  geom_text(aes(label = Name), size = 4) +
+  labs(title = "Principle Component Analysis CoV2genesILRUN24hr")
+
+ggsave(filename = "results/PCA_plot_CoV2genesILRUN24hr.png", plot = plot_CoV2genesILRUN24hr, width = 20, height = 20, dpi = 300, units = "cm")
+
+########################## ILRUNgenesUninf6hr #####################################################################
 # 'Which' provides positions of 'TRUE' values.
-sigUninf_ILRUN6vInf_ILRUN6 <- Uninf_ILRUN6vInf_ILRUN6[ which( Uninf_ILRUN6vInf_ILRUN6$padj < alpha), ]
+sigILRUNgenesUninf6hr_LT07<- ILRUNgenesUninf6hr_LT07[ which( ILRUNgenesUninf6hr_LT07$padj < alpha), ]
 # Slices out rows where the adjusted p-value is <0.05.
-sigUninf_ILRUN6vInf_ILRUN6 <- sigUninf_ILRUN6vInf_ILRUN6[ which( abs(sigUninf_ILRUN6vInf_ILRUN6$log2FoldChange) > beta), ]
+sigILRUNgenesUninf6hr_LT07 <- sigILRUNgenesUninf6hr_LT07[ which( abs(sigILRUNgenesUninf6hr_LT07$log2FoldChange) > beta), ]
 # Slices out rows where the fold change is above 2 and below -2.
 # Abs=absolute, tells it to filter things above 2, ignoring whether value is positive or negative.
-sigUninf_ILRUN6vInf_ILRUN6 <- sigUninf_ILRUN6vInf_ILRUN6[ which(sigUninf_ILRUN6vInf_ILRUN6$baseMean > gamma), ]
-write.csv(sigUninf_ILRUN6vInf_ILRUN6, file="results/sigUninf_ILRUN6vInf_ILRUN6.csv")
+sigILRUNgenesUninf6hr_LT07 <- sigILRUNgenesUninf6hr_LT07[ which(sigILRUNgenesUninf6hr_LT07$baseMean > gamma), ]
+write.csv(sigILRUNgenesUninf6hr_LT07, file="results/sigILRUNgenesUninf6hr_LT07.csv")
 # Slices out rows above an average count of 10 reads (anything below is rubbish).
-Uninf_ILRUN6vInf_ILRUN6_hits <- rownames(sigUninf_ILRUN6vInf_ILRUN6)
-length(Uninf_ILRUN6vInf_ILRUN6_hits)
-write.csv(norm_counts[Uninf_ILRUN6vInf_ILRUN6_hits, ], file="results/DESeq2_sig_Uninf_ILRUN6vInf_ILRUN6_normalized_counts.csv")
+ILRUNgenesUninf6hr_LT07_hits <- rownames(sigILRUNgenesUninf6hr_LT07)
+length(ILRUNgenesUninf6hr_LT07_hits)
+write.csv(norm_counts[ILRUNgenesUninf6hr_LT07_hits, ], file="results/DESeq2_sig_ILRUNgenesUninf6hr_LT07_normalized_counts.csv")
+read_csv("results/sigILRUNgenesUninf6hr_LT07.csv") %>% 
+  select("X1") %>% 
+  rename(gene = X1) %>% 
+  separate(col =gene, into = c("name", "XLOC", "gene"), sep ="_") %>% 
+  select(gene) %>%
+  filter(gene != "Unknown") %>%
+  write.csv("results/ILRUNgenesUninf6hr_LT07_david.csv")
 
+########################## ILRUNgenesUninf24hr #####################################################################
 
-# Filter Uninfectected siILRUN versus Infected siILRUN 24hr:
+# Filter ILRUNgenesUninf24hr:
 # 'Which' provides positions of 'TRUE' values.
-sigUninf_ILRUN24vInf_ILRUN24 <- Uninf_ILRUN24vInf_ILRUN24[ which( Uninf_ILRUN24vInf_ILRUN24$padj < alpha), ]
+sigILRUNgenesUninf24hr_LT07<- ILRUNgenesUninf24hr_LT07[ which( ILRUNgenesUninf24hr_LT07$padj < alpha), ]
 # Slices out rows where the adjusted p-value is <0.05.
-sigUninf_ILRUN24vInf_ILRUN24 <- sigUninf_ILRUN24vInf_ILRUN24[ which( abs(sigUninf_ILRUN24vInf_ILRUN24$log2FoldChange) > beta), ]
+sigILRUNgenesUninf24hr_LT07 <- sigILRUNgenesUninf24hr_LT07[ which( abs(sigILRUNgenesUninf24hr_LT07$log2FoldChange) > beta), ]
 # Slices out rows where the fold change is above 2 and below -2.
 # Abs=absolute, tells it to filter things above 2, ignoring whether value is positive or negative.
-sigUninf_ILRUN24vInf_ILRUN24 <- sigUninf_ILRUN24vInf_ILRUN24[ which(sigUninf_ILRUN24vInf_ILRUN24$baseMean > gamma), ]
-write.csv(sigUninf_ILRUN24vInf_ILRUN24, file="results/sigUninf_ILRUN24vInf_ILRUN24.csv")
+sigILRUNgenesUninf24hr_LT07 <- sigILRUNgenesUninf24hr_LT07[ which(sigILRUNgenesUninf24hr_LT07$baseMean > gamma), ]
+write.csv(sigILRUNgenesUninf24hr_LT07, file="results/sigILRUNgenesUninf24hr_LT07.csv")
 # Slices out rows above an average count of 10 reads (anything below is rubbish).
-Uninf_ILRUN24vInf_ILRUN24_hits <- rownames(sigUninf_ILRUN24vInf_ILRUN24)
-length(Uninf_ILRUN24vInf_ILRUN24_hits)
-write.csv(norm_counts[Uninf_ILRUN24vInf_ILRUN24_hits, ], file="results/DESeq2_sig_Uninf_ILRUN24vInf_ILRUN24_normalized_counts.csv")
+ILRUNgenesUninf24hr_LT07_hits <- rownames(sigILRUNgenesUninf24hr_LT07)
+length(ILRUNgenesUninf24hr_LT07_hits)
+write.csv(norm_counts[ILRUNgenesUninf24hr_LT07_hits, ], file="results/DESeq2_sig_ILRUNgenesUninf24hr_LT07_normalized_counts.csv")
+read_csv("results/sigILRUNgenesUninf24hr_LT07.csv") %>% 
+  select("X1") %>% 
+  rename(gene = X1) %>% 
+  separate(col =gene, into = c("name", "XLOC", "gene"), sep ="_") %>% 
+  select(gene) %>%
+  filter(gene != "Unknown") %>%
+  write.csv("results/ILRUNgenesUninf24hr_LT07_david.csv")
+
+########################## ILRUNgenesInf6hr ###################################################################### 
+##'Which' provides positions of 'TRUE' values.
+sigILRUNgenesInf6hr_LT07<- ILRUNgenesInf6hr_LT07[ which( ILRUNgenesInf6hr_LT07$padj < alpha), ]
+# Slices out rows where the adjusted p-value is <0.05.
+sigILRUNgenesInf6hr_LT07 <- sigILRUNgenesInf6hr_LT07[ which( abs(sigILRUNgenesInf6hr_LT07$log2FoldChange) > beta), ]
+# Slices out rows where the fold change is above 2 and below -2.
+# Abs=absolute, tells it to filter things above 2, ignoring whether value is positive or negative.
+sigILRUNgenesInf6hr_LT07 <- sigILRUNgenesInf6hr_LT07[ which(sigILRUNgenesInf6hr_LT07$baseMean > gamma), ]
+write.csv(sigILRUNgenesInf6hr_LT07, file="results/sigILRUNgenesInf6hr_LT07.csv")
+# Slices out rows above an average count of 10 reads (anything below is rubbish).
+ILRUNgenesInf6hr_LT07_hits <- rownames(sigILRUNgenesInf6hr_LT07)
+length(ILRUNgenesInf6hr_LT07_hits)
+write.csv(norm_counts[ILRUNgenesInf6hr_LT07_hits, ], file="results/DESeq2_sig_ILRUNgenesInf6hr_LT07_normalized_counts.csv")
+read_csv("results/sigILRUNgenesInf6hr_LT07.csv") %>% 
+  select("X1") %>% 
+  rename(gene = X1) %>% 
+  separate(col =gene, into = c("name", "XLOC", "gene"), sep ="_") %>% 
+  select(gene) %>%
+  filter(gene != "Unknown") %>%
+  write.csv("results/ILRUNgenesInf6hr_LT07_david.csv")
+
+########################## ILRUNgenesInf24hr ###################################################################### 
+# 'Which' provides positions of 'TRUE' values.
+sigILRUNgenesInf24hr_LT07<- ILRUNgenesInf24hr_LT07[ which( ILRUNgenesInf24hr_LT07$padj < alpha), ]
+# Slices out rows where the adjusted p-value is <0.05.
+sigILRUNgenesInf24hr_LT07 <- sigILRUNgenesInf24hr_LT07[ which( abs(sigILRUNgenesInf24hr_LT07$log2FoldChange) > beta), ]
+# Slices out rows where the fold change is above 2 and below -2.
+# Abs=absolute, tells it to filter things above 2, ignoring whether value is positive or negative.
+sigILRUNgenesInf24hr_LT07 <- sigILRUNgenesInf24hr_LT07[ which(sigILRUNgenesInf24hr_LT07$baseMean > gamma), ]
+write.csv(sigILRUNgenesInf24hr_LT07, file="results/sigILRUNgenesInf24hr_LT07.csv")
+# Slices out rows above an average count of 10 reads (anything below is rubbish).
+ILRUNgenesInf24hr_LT07_hits <- rownames(sigILRUNgenesInf24hr_LT07)
+length(ILRUNgenesInf24hr_LT07_hits)
+write.csv(norm_counts[ILRUNgenesInf24hr_LT07_hits, ], file="results/DESeq2_sig_ILRUNgenesInf24hr_LT07_normalized_counts.csv")
+read_csv("results/sigILRUNgenesInf24hr_LT07.csv") %>% 
+  select("X1") %>% 
+  rename(gene = X1) %>% 
+  separate(col =gene, into = c("name", "XLOC", "gene"), sep ="_") %>% 
+  select(gene) %>%
+  filter(gene != "Unknown") %>%
+  write.csv("results/ILRUNgenesInf24hr_LT07_david.csv")
+
+
+
 
 
 
@@ -269,59 +547,6 @@ text_plot_lessLT07_Lesslane <- ggplot(PCA_data_lessLT07_Lesslane, aes(x = PC1, y
 ggsave(filename = "results/PCA_lessLT07_LessLane.png", plot = text_plot_lessLT07_Lesslane, width = 12, height = 10, dpi = 300, units = "cm")
 
 
-
-#####Repeat analysis for infection versus uninfected counts dataset excluding LT07 and excluding lane duplicates for plot readability###############
-
-# Construct a SummarizedExperiment object:
-dds_inf <- DESeqDataSetFromMatrix(
-  countData = df,
-  colData = md,
-  design = ~ Infection + Lane) # ~ is representative of 'by', i.e. compare by condition, sex.
-
-# Perform DE testing:
-dds_inf <- DESeq(dds_inf)
-
-# Output normalized counts:
-norm_counts_inf <- counts (dds_inf, normalized=TRUE)
-write.csv(norm_counts_inf, file="results/DESeq2_ilrun_siRNA_inf_normalized_counts.csv")
-
-#read in the metadata
-Inf_lessLT07_lessLane_metadata <- read_csv("data/ilrun_metadata_siRNA.csv") %>% 
-  mutate(Name = str_extract(Sample, "^....")) %>%
-  filter(Sample != "LT07_L001" |Sample != "LT07_L002") %>%
-  filter(Lane != "L002")
-
-#join with the counts data 
-Inf_lessLT07_lessLane_expression <- read_csv("results/DESeq2_ilrun_siRNA_inf_normalized_counts.csv") %>%
-  rename(gene_locus = X1) %>%
-  select(-LT07_L001, -LT07_L002) %>%
-  gather(Sample, expression, -gene_locus) %>%
-  filter(str_detect(Sample, 'L001')) %>% 
-  left_join(lessLT07_lessLane_metadata, by = "Sample")
-
-#scale gene expression for all samples 
-Inf_lessLT07_lessLane_scaled_genes <- Inf_lessLT07_lessLane_expression %>%
-  spread(gene_locus, expression) %>%
-  select(-Infection, -siRNA, -timepoint, -Condition, -Lane, -Name) %>% 
-  column_to_rownames("Sample") %>% 
-  scale()
-
-#use the prcomp function on scaled samples
-Inf_lessLT07_Lesslane_pca_genes <- prcomp(Inf_lessLT07_lessLane_scaled_genes)
-
-#tidy data frame for plotting
-PCA_data_lessLT07_Lesslane_inf <- Inf_lessLT07_Lesslane_pca_genes$x %>% 
-  as_tibble(rownames = "Sample") %>%
-  gather(PC, expression, -Sample) %>% 
-  left_join(all_metadata, by = "Sample") %>%
-  spread(PC, expression)
-
-text_plot_lessLT07_Lesslane_inf <- ggplot(PCA_data_lessLT07_Lesslane_inf, aes(x = PC1, y = PC2)) +
-  geom_point(aes(shape = siRNA, color = Infection), size = 6)+
-  geom_text(aes(label = timepoint), size = 4) +
-  labs(title = "Principle Component Analysis less LT07 less Lanes infection normalized counts")
-
-ggsave(filename = "results/PCA_lessLT07_LessLane_inf.png", plot = text_plot_lessLT07_Lesslane_inf, width = 15, height = 10, dpi = 300, units = "cm")
 
 
 ######### Expression of ISGs in ILRUN data ######
@@ -608,6 +833,33 @@ DPP4 <- lessLT07_expression %>%
          axis.title = element_text( size = 8))
 
 
+TRIM31 <- lessLT07_expression %>%
+  filter(gene_locus == "XLOC_028190_TRIM31") %>% 
+  ggplot(aes(x= Infection, y = expression, color = siRNA)) +
+  geom_boxplot()+
+  facet_wrap(~timepoint)+
+  labs(title = "TRIM31", 
+       x = "") +
+  theme( axis.text = element_text( size = 8 ),
+         axis.text.x = element_text( size = 8 ),
+         axis.title = element_text( size = 8))
+
+ggsave(filename = "results/TRIM31.png", plot = TRIM31, width = 25, height = 20, dpi = 300, units = "cm")
+
+
+
+LGI4 <- lessLT07_expression %>%
+  filter(gene_locus == "XLOC_017175_LGI4") %>% 
+  ggplot(aes(x= Infection, y = expression, color = siRNA)) +
+  geom_boxplot()+
+  facet_wrap(~timepoint)+
+  labs(title = "LGI4", 
+       x = "") +
+  theme( axis.text = element_text( size = 8 ),
+         axis.text.x = element_text( size = 8 ),
+         axis.title = element_text( size = 8))
+
+ggsave(filename = "results/LGI4.png", plot = LGI4, width = 25, height = 20, dpi = 300, units = "cm")
 
 PDZD4 <- lessLT07_expression %>%
   filter(gene_locus == "XLOC_037006_PDZD4") %>% 
