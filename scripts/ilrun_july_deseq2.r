@@ -11,7 +11,12 @@
 # load libraries
 #install.packages("BiocManager")
 #BiocManager::install("DESeq2")
-library("DESeq2")
+library(DESeq2)
+library(tidyverse)
+library(dplyr)
+library(readr)
+library(vroom)
+library(stringr)
 
 rm(list=ls())
 

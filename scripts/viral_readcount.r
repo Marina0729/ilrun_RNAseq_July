@@ -12,6 +12,7 @@ library(tidyverse)
 library(dplyr)
 library(readr)
 library(vroom)
+library(stringr)
 
 
 ###First get the list of all txt files
@@ -22,7 +23,12 @@ list_of_coverview_summary_files <- list.files(path = ".", recursive = TRUE,
 ####total read counts for normalisation
 
 
-total_counts <- read.csv("results/total_counts.csv")
+total_counts <- read.csv("results/total_counts.csv") %>% 
+  as_tibble() %>%
+  filter(Sample != "LT41") %>% 
+  filter(Sample != "LT42") %>% 
+  select(Reads)
+
 counts_18S <- read.csv("results/counts_18s.csv")
 
 #read in the metadata
@@ -39,9 +45,11 @@ coverview_ilrun_SARSCOV2 <- vroom(list_of_coverview_summary_files, id = "FileNam
   mutate(Lane = str_extract(Sample_Lane, "L00.")) %>%
   left_join(metadata_viral_readcount, by = "Sample_Lane") %>% 
   select(-Sample_Lane, -Lane.y) %>% 
-  filter(Infection != "NA")
+  filter(Infection != "NA") %>% 
+  bind_cols(total_counts) %>% 
+  mutate(cpm = RC/Reads*1000000 )
 
-viral_reads_ilrun <- ggplot(coverview_ilrun_SARSCOV2, aes(x = Infection, y = RC, color = siRNA)) +
+viral_reads_ilrun <- ggplot(coverview_ilrun_SARSCOV2, aes(x = Infection, y = cpm, color = siRNA)) +
   geom_boxplot()+
   scale_y_log10()+
   labs(title = "SARS-CoV2 read counts")
@@ -53,10 +61,42 @@ ggsave(filename = "results/viral_reads_ilrun_july.png", plot = viral_reads_ilrun
 coverview_ilrun_SARSCOV2_infected <- coverview_ilrun_SARSCOV2 %>% 
   filter(RC > 1000 )
 
-viral_reads_ilrun_infected <- ggplot(coverview_ilrun_SARSCOV2_infected, aes(x = timepoint, y = RC, color = siRNA)) +
+viral_reads_ilrun_infected <- ggplot(coverview_ilrun_SARSCOV2_infected, aes(x = timepoint, y = cpm, color = siRNA)) +
   geom_boxplot()+
   scale_y_log10()+
-  labs(title = "SARS-CoV2 read counts")
+  labs(title = "SARS-CoV2 read counts for infected samples")
 
 
 ggsave(filename = "results/viral_reads_ilrun_infected.png", plot = viral_reads_ilrun_infected, width = 12, height = 10, dpi = 300, units = "cm")
+
+
+
+#######################18S rRNA contamination######################
+
+total_counts_for18S <- read.csv("results/total_counts.csv") %>% 
+  as_tibble() %>%
+  filter(Sample != "LT41") %>% 
+  filter(Sample != "LT42")
+
+counts_18S <- read.csv("results/counts_18s.csv") %>% 
+  as_tibble() %>%
+  filter( X.CHROM != "LT41_L001") %>% 
+  filter( X.CHROM != "LT41_L002") %>% 
+  filter( X.CHROM != "LT42_L001") %>% 
+  filter( X.CHROM != "LT42_L002") %>%  
+  bind_cols(total_counts_for18S) %>% 
+  mutate(cpm = RC/Reads*100000) %>% 
+  rename(Sample_Lane = X.CHROM) %>%
+  left_join(metadata_viral_readcount, by = "Sample_Lane") %>% 
+  filter(Lane == "L001") %>% 
+  mutate(Sample = str_remove(Sample, "LT"))
+
+  
+  
+rRNA_contamination <- ggplot(counts_18S, aes(x = Sample, y = cpm, color = Infection )) +
+  geom_point(size = 4) +
+  labs(title = "18S rRNA contamination")
+
+ggsave(filename = "results/rRNA_contamination.png", plot = rRNA_contamination, width = 22, height = 10, dpi = 300, units = "cm")
+
+
