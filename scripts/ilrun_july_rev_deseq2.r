@@ -77,14 +77,15 @@ write.csv(norm_counts, file="results/DESeq2_ilrun_siRNA_LT07_rev_all_normalized_
 
 
 # Convert results to dataframe:
-CoV2genesNEG6hr <- results(dds, contrast = c("Condition", "Uninfected_NEG_6hr", "Infected_NEG_6hr"))
-CoV2genesNEG24hr <- results(dds, contrast = c("Condition", "Uninfected_NEG_24hr", "Infected_NEG_24hr"))
-CoV2genesILRUN6hr <- results(dds, contrast = c("Condition", "Uninfected_ILRUN_6hr", "Infected_ILRUN_6hr"))
-CoV2genesILRUN24hr <- results(dds, contrast = c("Condition", "Uninfected_ILRUN_24hr", "Infected_ILRUN_24hr"))
-ILRUNgenesUninf6hr <- results(dds, contrast = c("Condition","Uninfected_NEG_6hr", "Uninfected_ILRUN_6hr"))
-ILRUNgenesUninf24hr <- results(dds, contrast = c("Condition","Uninfected_NEG_24hr", "Uninfected_ILRUN_24hr"))
-ILRUNgenesInf6hr <- results(dds, contrast = c("Condition","Infected_NEG_6hr", "Infected_ILRUN_6hr"))
-ILRUNgenesInf24hr <- results(dds, contrast = c("Condition","Infected_NEG_24hr", "Infected_ILRUN_24hr"))
+CoV2genesNEG6hr <- results(dds, contrast = c("Condition", "Infected_NEG_6hr", "Uninfected_NEG_6hr"))
+CoV2genesNEG24hr <- results(dds, contrast = c("Condition", "Infected_NEG_24hr", "Uninfected_NEG_24hr"))
+CoV2genesILRUN6hr <- results(dds, contrast = c("Condition", "Infected_ILRUN_6hr", "Uninfected_ILRUN_6hr"))
+CoV2genesILRUN24hr <- results(dds, contrast = c("Condition", "Infected_ILRUN_24hr", "Uninfected_ILRUN_24hr"))
+
+ILRUNgenesUninf6hr <- results(dds, contrast = c("Condition", "Uninfected_ILRUN_6hr","Uninfected_NEG_6hr"))
+ILRUNgenesUninf24hr <- results(dds, contrast = c("Condition", "Uninfected_ILRUN_24hr","Uninfected_NEG_24hr"))
+ILRUNgenesInf6hr <- results(dds, contrast = c("Condition", "Infected_ILRUN_6hr", "Infected_NEG_6hr"))
+ILRUNgenesInf24hr <- results(dds, contrast = c("Condition", "Infected_ILRUN_24hr", "Infected_NEG_24hr"))
 
 
 # Set adjusted p-value significance (padj) threshold:
@@ -412,7 +413,7 @@ volcano_plot_CoV2genesILRUN24hr <- EnhancedVolcano(forplotting_CoV2genesILRUN24h
                                                  pointSize = 3.0,
                                                  labSize = 3.0)
 
-ggsave(filename = "results/volcano_plot_CoV2genesILRUN624hr.png", plot = volcano_plot_CoV2genesILRUN24hr, width = 20, height = 20, dpi = 300, units = "cm")
+ggsave(filename = "results/volcano_plot_CoV2genesILRUN24hr.png", plot = volcano_plot_CoV2genesILRUN24hr, width = 20, height = 20, dpi = 300, units = "cm")
 
 ########################## ILRUNgenesUninf6hr #####################################################################
 # 'Which' provides positions of 'TRUE' values.
@@ -579,24 +580,23 @@ ggsave(filename = "results/volcano_plot_ILRUNgenesUninf24hr.png", plot = volcano
 
 ########################## ILRUNgenesInf6hr ###################################################################### 
 ##'Which' provides positions of 'TRUE' values.
-sigILRUNgenesInf6hr_LT07<- ILRUNgenesInf6hr_LT07[ which( ILRUNgenesInf6hr_LT07$padj < alpha), ]
+sigILRUNgenesInf6hr<- ILRUNgenesInf6hr[ which( ILRUNgenesInf6hr$padj < alpha), ]
 # Slices out rows where the adjusted p-value is <0.05.
-sigILRUNgenesInf6hr_LT07 <- sigILRUNgenesInf6hr_LT07[ which( abs(sigILRUNgenesInf6hr_LT07$log2FoldChange) > beta), ]
+sigILRUNgenesInf6hr <- sigILRUNgenesInf6hr[ which( abs(sigILRUNgenesInf6hr$log2FoldChange) > beta), ]
 # Slices out rows where the fold change is above 2 and below -2.
 # Abs=absolute, tells it to filter things above 2, ignoring whether value is positive or negative.
-sigILRUNgenesInf6hr_LT07 <- sigILRUNgenesInf6hr_LT07[ which(sigILRUNgenesInf6hr_LT07$baseMean > gamma), ]
-write.csv(sigILRUNgenesInf6hr_LT07, file="results/sigILRUNgenesInf6hr_LT07.csv")
+sigILRUNgenesInf6hr <- sigILRUNgenesInf6hr[ which(sigILRUNgenesInf6hr$baseMean > gamma), ]
+write.csv(sigILRUNgenesInf6hr, file="results/sigILRUNgenesInf6hr_LT07_rev.csv")
 # Slices out rows above an average count of 10 reads (anything below is rubbish).
-ILRUNgenesInf6hr_LT07_hits <- rownames(sigILRUNgenesInf6hr_LT07)
-length(ILRUNgenesInf6hr_LT07_hits)
-write.csv(norm_counts[ILRUNgenesInf6hr_LT07_hits, ], file="results/DESeq2_sig_ILRUNgenesInf6hr_LT07_normalized_counts.csv")
-read_csv("results/sigILRUNgenesInf6hr_LT07.csv") %>% 
+ILRUNgenesInf6hr_hits <- rownames(sigILRUNgenesInf6hr)
+length(ILRUNgenesInf6hr_hits)
+write.csv(norm_counts[ILRUNgenesInf6hr_hits, ], file="results/DESeq2_sig_ILRUNgenesInf6hr_LT07_rev_normalized_counts.csv")
+read_csv("results/sigILRUNgenesInf6hr_LT07_rev.csv") %>% 
   select("X1") %>% 
   rename(gene = X1) %>% 
-  separate(col =gene, into = c("name", "XLOC", "gene"), sep ="_") %>% 
-  select(gene) %>%
-  filter(gene != "Unknown") %>%
-  write.csv("results/ILRUNgenesInf6hr_LT07_david.csv")
+  separate(gene, c("gene", "gene1")) %>% 
+  select(gene) %>% 
+  write.csv("results/ILRUNgenesInf6hr_LT07_rev_david.csv")
 
 #making a PCA  
 #read in the metadata
@@ -616,7 +616,7 @@ ILRUNgenesInf6hr_expression <- read_csv("results/DESeq2_ilrun_siRNA_all_normaliz
 #scale gene expression for all samples 
 ILRUNgenesInf6hr_expression_scaled_genes <- ILRUNgenesInf6hr_expression %>%
   spread(gene_locus, expression) %>%
-  select(-Infection, -siRNA, -timepoint, -Condition, -Lane, -HTSeq_rev, -Name) %>% 
+  select(-Infection, -siRNA, -timepoint, -Condition, -Lane, -HTSeq_rev, -Name) %>%
   column_to_rownames("Sample") %>% 
   scale()
 
@@ -637,26 +637,46 @@ plot_ILRUNgenesInf6hr <- ggplot(PCA_data_ILRUNgenesInf6hr_pca_genes, aes(x = PC1
 
 ggsave(filename = "results/PCA_plot_ILRUNgenesInf6hr.png", plot = plot_ILRUNgenesInf6hr, width = 20, height = 20, dpi = 300, units = "cm")
 
+forplotting_ILRUNgenesInf6hr <- ILRUNgenesInf6hr %>%
+  as.data.frame() %>% 
+  rownames_to_column() %>% 
+  separate(rowname, c("gene", "gene1"), sep = "_") %>% 
+  select(-gene1) %>% 
+  remove_rownames %>% 
+  column_to_rownames(var="gene")
+
+volcano_plot_ILRUNgenesInf6hr <- EnhancedVolcano(forplotting_ILRUNgenesInf6hr,
+                                                    lab = rownames(forplotting_ILRUNgenesInf6hr),
+                                                    x = 'log2FoldChange',
+                                                    y = 'pvalue',
+                                                    xlim = c(-3, 3),
+                                                    title = 'ILRUN genes Infected 6hr',
+                                                    pCutoff = 0.05,
+                                                    FCcutoff = 0.75,
+                                                    pointSize = 3.0,
+                                                    labSize = 3.0)
+
+ggsave(filename = "results/volcano_plot_ILRUNgenesInf6hr.png", plot = volcano_plot_ILRUNgenesInf6hr, width = 20, height = 20, dpi = 300, units = "cm")
+
 ########################## ILRUNgenesInf24hr ###################################################################### 
 # 'Which' provides positions of 'TRUE' values.
-sigILRUNgenesInf24hr_LT07<- ILRUNgenesInf24hr_LT07[ which( ILRUNgenesInf24hr_LT07$padj < alpha), ]
+sigILRUNgenesInf24hr<- ILRUNgenesInf24hr[ which( ILRUNgenesInf24hr$padj < alpha), ]
 # Slices out rows where the adjusted p-value is <0.05.
-sigILRUNgenesInf24hr_LT07 <- sigILRUNgenesInf24hr_LT07[ which( abs(sigILRUNgenesInf24hr_LT07$log2FoldChange) > beta), ]
+sigILRUNgenesInf24hr <- sigILRUNgenesInf24hr[ which( abs(sigILRUNgenesInf24hr$log2FoldChange) > beta), ]
 # Slices out rows where the fold change is above 2 and below -2.
 # Abs=absolute, tells it to filter things above 2, ignoring whether value is positive or negative.
-sigILRUNgenesInf24hr_LT07 <- sigILRUNgenesInf24hr_LT07[ which(sigILRUNgenesInf24hr_LT07$baseMean > gamma), ]
-write.csv(sigILRUNgenesInf24hr_LT07, file="results/sigILRUNgenesInf24hr_LT07.csv")
+sigILRUNgenesInf24hr <- sigILRUNgenesInf24hr[ which(sigILRUNgenesInf24hr$baseMean > gamma), ]
+write.csv(sigILRUNgenesInf24hr, file="results/sigILRUNgenesInf24hr_LT07_rev.csv")
 # Slices out rows above an average count of 10 reads (anything below is rubbish).
-ILRUNgenesInf24hr_LT07_hits <- rownames(sigILRUNgenesInf24hr_LT07)
-length(ILRUNgenesInf24hr_LT07_hits)
-write.csv(norm_counts[ILRUNgenesInf24hr_LT07_hits, ], file="results/DESeq2_sig_ILRUNgenesInf24hr_LT07_normalized_counts.csv")
-read_csv("results/sigILRUNgenesInf24hr_LT07.csv") %>% 
+ILRUNgenesInf24hr_hits <- rownames(sigILRUNgenesInf24hr)
+length(ILRUNgenesInf24hr_hits)
+write.csv(norm_counts[ILRUNgenesInf24hr_hits, ], file="results/DESeq2_sig_ILRUNgenesInf24hr_LT07_rev_normalized_counts.csv")
+read_csv("results/sigILRUNgenesInf24hr_LT07_rev.csv") %>% 
   select("X1") %>% 
   rename(gene = X1) %>% 
-  separate(col =gene, into = c("name", "XLOC", "gene"), sep ="_") %>% 
-  select(gene) %>%
-  filter(gene != "Unknown") %>%
-  write.csv("results/ILRUNgenesInf24hr_LT07_david.csv")
+  separate(gene, c("gene", "gene1")) %>% 
+  select(gene) %>% 
+  write.csv("results/ILRUNgenesInf24hr_LT07_rev_david.csv")
 
 #making a PCA  
 #read in the metadata
@@ -696,3 +716,124 @@ plot_ILRUNgenesInf24hr <- ggplot(PCA_data_ILRUNgenesInf24hr_pca_genes, aes(x = P
   labs(title = "Principle Component Analysis ILRUNgenesInf24hr")
 
 ggsave(filename = "results/PCA_plot_ILRUNgenesInf24hr.png", plot = plot_ILRUNgenesInf24hr, width = 20, height = 20, dpi = 300, units = "cm")
+forplotting_ILRUNgenesInf6hr <- ILRUNgenesInf6hr %>%
+  as.data.frame() %>% 
+  rownames_to_column() %>% 
+  separate(rowname, c("gene", "gene1"), sep = "_") %>% 
+  select(-gene1) %>% 
+  remove_rownames %>% 
+  column_to_rownames(var="gene")
+
+forplotting_ILRUNgenesInf24hr <- ILRUNgenesInf24hr %>%
+  as.data.frame() %>% 
+  rownames_to_column() %>% 
+  separate(rowname, c("gene", "gene1"), sep = "_") %>% 
+  select(-gene1) %>% 
+  remove_rownames %>% 
+  column_to_rownames(var="gene")
+
+volcano_plot_ILRUNgenesInf24hr <- EnhancedVolcano(forplotting_ILRUNgenesInf24hr,
+                                                 lab = rownames(forplotting_ILRUNgenesInf24hr),
+                                                 x = 'log2FoldChange',
+                                                 y = 'pvalue',
+                                                 xlim = c(-3, 3),
+                                                 title = 'ILRUN genes Infected 24hr',
+                                                 pCutoff = 0.05,
+                                                 FCcutoff = 0.75,
+                                                 pointSize = 3.0,
+                                                 labSize = 3.0)
+
+ggsave(filename = "results/volcano_plot_ILRUNgenesInf24hr.png", plot = volcano_plot_ILRUNgenesInf24hr, width = 20, height = 20, dpi = 300, units = "cm")
+
+##################################################ILRUN genes heat map##################################################################################
+
+#tidy all the dataframes 
+Uninf6hr <- read.csv("results/sigILRUNgenesUninf6hr_LT07_rev.csv") %>%
+  as_tibble() %>% 
+  rename(gene = X) %>% 
+  separate(gene, c("gene", "gene1"), sep = "_") %>% 
+  select(-gene1, -baseMean, -lfcSE, -stat, -pvalue) %>% 
+  rename(log2FC_Uninf6hr = log2FoldChange) %>% 
+  rename(padj_Uninf6hr = padj)
+
+  
+Uninf24hr <- read.csv("results/sigILRUNgenesUninf24hr_LT07_rev.csv") %>%
+  as_tibble() %>% 
+  rename(gene = X) %>% 
+  separate(gene, c("gene", "gene1"), sep = "_") %>% 
+  select(-gene1, -baseMean, -lfcSE, -stat, -pvalue) %>% 
+  rename(log2FC_Uninf24hr = log2FoldChange) %>% 
+  rename(padj_Uninf24hr = padj)
+
+
+Inf6hr <- read.csv("results/sigILRUNgenesInf6hr_LT07_rev.csv") %>%
+  as_tibble() %>% 
+  rename(gene = X) %>% 
+  separate(gene, c("gene", "gene1"), sep = "_") %>% 
+  select(-gene1, -baseMean, -lfcSE, -stat, -pvalue) %>% 
+  rename(log2FC_Inf6hr = log2FoldChange) %>% 
+  rename(padj_Inf6hr = padj)
+
+
+Inf24hr <- read.csv("results/sigILRUNgenesInf24hr_LT07_rev.csv") %>%
+  as_tibble() %>% 
+  rename(gene = X) %>% 
+  separate(gene, c("gene", "gene1"), sep = "_") %>% 
+  select(-gene1, -baseMean, -lfcSE, -stat, -pvalue) %>% 
+  rename(log2FC_Inf24hr = log2FoldChange) %>% 
+  rename(padj_Inf24hr = padj)
+
+#merge all the dataframes 
+
+ILRUN_Uninf <- full_join(Uninf6hr, Uninf24hr, by = "gene" )
+ILRUN_Inf <- full_join(Inf6hr, Inf24hr, by = "gene" )
+
+ILRUN <-full_join(ILRUN_Uninf, ILRUN_Inf, by = "gene" )
+
+#assigning the condition to a variable 
+
+ILRUN_for_plotting <- ILRUN %>% 
+  select(gene, log2FC_Uninf6hr, log2FC_Uninf24hr, log2FC_Inf6hr, log2FC_Inf24hr) %>%
+  mutate(FC_6hf = log2FC_Inf6hr - log2FC_Uninf6hr) %>% 
+  mutate(FC_24hr = log2FC_Inf24hr - log2FC_Uninf24hr) %>% 
+  filter(FC_6hf >= 0.25 | FC_6hf <= -0.25 | FC_24hr >=0.25 | FC_24hr < -0.25 ) %>%
+  filter(str_detect(gene, "LOC") == FALSE) %>% 
+  filter(FC_24hr != "NA") %>% 
+  select(-FC_6hf) %>% 
+  select(-FC_24hr) %>% 
+  gather(condition, log2FC,  -gene) %>% 
+  separate(condition, c("log", "condition"), sep = "_") %>% 
+  select(-log) %>% 
+  mutate(direction = log2FC>0) %>% 
+  filter(log2FC != "NA")
+  
+
+# Negative numbers are increasingly red, positive numbers are increasingly green
+# Transitions through white at 0 (has a 'midpoint' argument but default is 0)
+# Can use colour names found in colours() or can use hexcodes eg "#ff0000" = red
+scale_fill_gradient2(low = "red", mid = "white", high = "green")
+
+
+ILRUN_heatmap <- ggplot(ILRUN_for_plotting, aes(x = condition, y=gene, fill=log2FC)) + 
+  geom_tile()+
+  scale_fill_distiller(palette = "PRGn", limits = c(-3, 3))
+  
+  
+
+
+# Converts one of the colorbrewer2.org palettes for use with continuous data
+# The diverging palettes from there are good for heatmaps
+# Eg, for the purple/green palette find the name from the site (PRGn)
+# Doesn't have a midpoint setting, so you'll need to set the limits manually to 
+# be symmetric based on the largest absolute log2FC
+scale_fill_distiller(palette = "PRGn", limits = c(-3, 3)
+                     
+                     
+  
+  theme(axis.text.y = element_text(size = 2),
+        axis.text.x = element_text(size = 10))+
+  labs(title = "ILRUN DE genes altered by Imfection", color = "ILRUN upregulation") +
+  labs
+                            
+
+ggsave(filename = "results/ILRUN_heatmap.png", plot = ILRUN_heatmap, width = 10, height = 30, dpi = 300, units = "cm")
