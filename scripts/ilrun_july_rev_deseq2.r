@@ -19,7 +19,6 @@ library(vroom)
 library(stringr)
 library(EnhancedVolcano)
 
-
 rm(list=ls())
 
 #splice the count data 
@@ -490,7 +489,7 @@ volcano_plot_ILRUNgenesUninf6hr <- EnhancedVolcano(forplotting_ILRUNgenesUninf6h
                                                  xlim = c(-3, 3),
                                                  title = 'ILRUN genes Uninfected 6hr',
                                                  pCutoff = 0.05,
-                                                 FCcutoff = 0.75,
+                                                 FCcutoff = 1,
                                                  pointSize = 3.0,
                                                  labSize = 3.0)
 
@@ -641,9 +640,11 @@ forplotting_ILRUNgenesInf6hr <- ILRUNgenesInf6hr %>%
   as.data.frame() %>% 
   rownames_to_column() %>% 
   separate(rowname, c("gene", "gene1"), sep = "_") %>% 
-  select(-gene1) %>% 
+  select(-gene1) %>%
+  mutate(gene = str_replace(gene, "C6orf106", "ILRUN"))
   remove_rownames %>% 
   column_to_rownames(var="gene")
+ 
 
 volcano_plot_ILRUNgenesInf6hr <- EnhancedVolcano(forplotting_ILRUNgenesInf6hr,
                                                     lab = rownames(forplotting_ILRUNgenesInf6hr),
@@ -745,6 +746,39 @@ volcano_plot_ILRUNgenesInf24hr <- EnhancedVolcano(forplotting_ILRUNgenesInf24hr,
 
 ggsave(filename = "results/volcano_plot_ILRUNgenesInf24hr.png", plot = volcano_plot_ILRUNgenesInf24hr, width = 20, height = 20, dpi = 300, units = "cm")
 
+############################################### Specific genes #######################################################################################
+metadata_rev_LT07 <- read_csv("data/ilrun_metadata_siRNA_LT07_rev.csv")
+
+
+#join with the counts data 
+lessLT07_rev_expression <- read_csv("results/DESeq2_ilrun_siRNA_LT07_rev_all_normalized_counts.csv") %>%
+  rename(gene_locus = X1) %>% 
+  gather(Sample, expression, -gene_locus) %>%
+  left_join(metadata_rev_LT07, by = "Sample") %>% 
+  separate(gene_locus, c("gene", "gene1"), sep = "_") %>% 
+  select(-gene1) %>%
+  mutate(Sample = str_remove(Sample, ""))
+
+write.csv(lessLT07_rev_expression, file="results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv")
+
+tail(lessLT07_rev_expression)
+
+TGFB <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_rev_expression.csv") %>%
+  filter(gene_locus == "TGFB") %>% 
+  ggplot(aes(x= Infection, y = expression, color = siRNA)) +
+  geom_boxplot()+
+  facet_wrap(~timepoint)+
+  labs(title = "TGFB", 
+       x = "") +
+  theme( axis.text = element_text( size = 8 ),
+         axis.text.x = element_text( size = 8 ),
+         axis.title = element_text( size = 8))
+
+ggsave(filename = "results/TGFB.png", plot = TGFB, width = 25, height = 20, dpi = 300, units = "cm")
+
+
+
+
 ##################################################ILRUN genes heat map##################################################################################
 
 #tidy all the dataframes 
@@ -786,6 +820,7 @@ Inf24hr <- read.csv("results/sigILRUNgenesInf24hr_LT07_rev.csv") %>%
 #merge all the dataframes 
 
 ILRUN_Uninf <- full_join(Uninf6hr, Uninf24hr, by = "gene" )
+
 ILRUN_Inf <- full_join(Inf6hr, Inf24hr, by = "gene" )
 
 ILRUN <-full_join(ILRUN_Uninf, ILRUN_Inf, by = "gene" )
