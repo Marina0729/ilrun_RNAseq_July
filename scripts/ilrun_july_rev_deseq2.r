@@ -18,6 +18,7 @@ library(readr)
 library(vroom)
 library(stringr)
 library(EnhancedVolcano)
+library(viridis)
 
 rm(list=ls())
 
@@ -158,7 +159,8 @@ forplotting_CoV2genesNEG6hr <- CoV2genesNEG6hr %>%
   as.data.frame() %>% 
   rownames_to_column() %>% 
   separate(rowname, c("gene", "gene1"), sep = "_") %>% 
-  select(-gene1) %>% 
+  select(-gene1) %>%
+  mutate(gene = str_replace(gene, "C6orf106", "ILRUN")) %>% 
   remove_rownames %>% 
   column_to_rownames(var="gene")
   
@@ -238,7 +240,8 @@ forplotting_CoV2genesNEG24hr <- CoV2genesNEG24hr %>%
   as.data.frame() %>% 
   rownames_to_column() %>% 
   separate(rowname, c("gene", "gene1"), sep = "_") %>% 
-  select(-gene1) %>% 
+  select(-gene1) %>%
+  mutate(gene = str_replace(gene, "C6orf106", "ILRUN")) %>% 
   remove_rownames %>% 
   column_to_rownames(var="gene")
 
@@ -318,7 +321,8 @@ forplotting_CoV2genesILRUN6hr <- CoV2genesILRUN6hr %>%
   as.data.frame() %>% 
   rownames_to_column() %>% 
   separate(rowname, c("gene", "gene1"), sep = "_") %>% 
-  select(-gene1) %>% 
+  select(-gene1) %>%
+  mutate(gene = str_replace(gene, "C6orf106", "ILRUN")) %>% 
   remove_rownames %>% 
   column_to_rownames(var="gene")
 
@@ -398,6 +402,7 @@ forplotting_CoV2genesILRUN24hr <- CoV2genesILRUN24hr %>%
   rownames_to_column() %>% 
   separate(rowname, c("gene", "gene1"), sep = "_") %>% 
   select(-gene1) %>% 
+  mutate(gene = str_replace(gene, "C6orf106", "ILRUN")) %>% 
   remove_rownames %>% 
   column_to_rownames(var="gene")
 
@@ -434,7 +439,7 @@ read_csv("results/sigILRUNgenesUninf6hr_LT07_rev.csv") %>%
   select(gene) %>% 
   write.csv("results/ILRUNgenesUninf6hr_LT07_rev_david.csv")
 
-#making a PCA  
+######################## making a PCA ##########################################
 #read in the metadata
 ILRUNgenesUninf6hr_metadata <- read_csv("data/ilrun_metadata_siRNA_LT07_rev.csv") %>% 
   filter(Infection == "Uninfected") %>% 
@@ -473,27 +478,71 @@ plot_ILRUNgenesUninf6hr <- ggplot(PCA_data_ILRUNgenesUninf6hr_pca_genes, aes(x =
 
 ggsave(filename = "results/PCA_plot_ILRUNgenesUninf6hr.png", plot = plot_ILRUNgenesUninf6hr, width = 20, height = 20, dpi = 300, units = "cm")
 
+######################## Volcano plots ###################################
 
 forplotting_ILRUNgenesUninf6hr <- ILRUNgenesUninf6hr %>%
   as.data.frame() %>% 
   rownames_to_column() %>% 
   separate(rowname, c("gene", "gene1"), sep = "_") %>% 
   select(-gene1) %>% 
+  mutate(gene = str_replace(gene, "C6orf106", "ILRUN")) %>% 
+  mutate(gene = str_replace(gene, "ACKR3", "CXCR7")) %>%
+  mutate(gene = str_replace(gene, "CHUK","IkBKA")) %>%
+  mutate(gene = str_replace(gene, "TNFSF10", "TRAIL")) %>% 
   remove_rownames %>% 
   column_to_rownames(var="gene")
+
+write.csv(forplotting_ILRUNgenesUninf6hr, "results/ILRUNgenesUninf6hr_forplotting.csv")
+
+##show only significant immune genes ###
+tibble_ILRUNgenesUninf6hr <- ILRUNgenesUninf6hr %>%
+  as.data.frame() %>% 
+  rownames_to_column() %>% 
+  separate(rowname, c("gene", "gene1"), sep = "_") %>% 
+  select(-gene1) %>% 
+  mutate(gene = str_replace(gene, "C6orf106", "ILRUN")) %>% 
+  mutate(gene = str_replace(gene, "ACKR3", "CXCR7")) %>%
+  mutate(gene = str_replace(gene, "CHUK","IkBKA")) %>%
+  mutate(gene = str_replace(gene, "TNFSF10", "TRAIL"))
+
+
+immune_genes_Uninf6hr <- c('ISG15','IL6R','TLR7', 'STAT4', 'SOCS2','IL1B','IL15RA', 'AKT1', 'CD14', 'TLR2', 'IFIH1', 'OAS1',
+                  'JAK1', 'JAK2', 'CDK2', 'NFKB1', 'IL12A', 'IL8', 'TAP1', 'HLA-B', 'HLA-DMA', 'TRAIL', 'IL2RG', 'IL1R',
+                  'TGFB1', 'CCR1', 'CCR6', 'IL8', 'IFIT3', 'IL18', 'IFIT3', 'CXCR7', 'GDF11', 'LIFR', 'MMP14', 'THBS1', 'VAV3', 'PRKCQ',
+                  'IkBKA', 'ILRUN', 'VIM', 'FCGR2') %>%
+  as_tibble() %>% 
+  rename(gene = value) %>% 
+  left_join(tibble_ILRUNgenesUninf6hr , by = "gene") %>% 
+  filter(padj <0.05 ) %>% 
+  filter(log2FoldChange >0.75 | log2FoldChange < -0.75) 
+  
+
+#########################################
 
 volcano_plot_ILRUNgenesUninf6hr <- EnhancedVolcano(forplotting_ILRUNgenesUninf6hr,
                                                  lab = rownames(forplotting_ILRUNgenesUninf6hr),
                                                  x = 'log2FoldChange',
-                                                 y = 'pvalue',
+                                                 y = 'padj',
+                                                 selectLab = c(immune_genes_Uninf6hr$gene),
                                                  xlim = c(-3, 3),
-                                                 title = 'ILRUN genes Uninfected 6hr',
+                                                 title = 'ILRUN genes 6hr',
                                                  pCutoff = 0.05,
-                                                 FCcutoff = 1,
-                                                 pointSize = 3.0,
-                                                 labSize = 3.0)
+                                                 FCcutoff = 0.5,
+                                                 pointSize = 4.0,
+                                                 labSize = 5.0,
+                                                 labCol = 'black',
+                                                 labFace = 'bold',
+                                                 boxedLabels = TRUE,
+                                                 colAlpha = 4/5,
+                                                 legendPosition = 'right',
+                                                 legendLabSize = 14,
+                                                 legendIconSize = 4.0,
+                                                 drawConnectors = TRUE,
+                                                 widthConnectors = 1.0,
+                                                 colConnectors = 'black')
 
-ggsave(filename = "results/volcano_plot_ILRUNgenesUninf6hr.png", plot = volcano_plot_ILRUNgenesUninf6hr, width = 20, height = 20, dpi = 300, units = "cm")
+
+ggsave(filename = "results/volcano_plot_ILRUNgenesUninf6hr.png", plot = volcano_plot_ILRUNgenesUninf6hr, width = 30, height = 25, dpi = 300, units = "cm")
 
 ########################## ILRUNgenesUninf24hr #####################################################################
 
@@ -510,11 +559,13 @@ write.csv(sigILRUNgenesUninf24hr, file="results/sigILRUNgenesUninf24hr_LT07_rev.
 ILRUNgenesUninf24hr_hits <- rownames(sigILRUNgenesUninf24hr)
 length(ILRUNgenesUninf24hr_hits)
 write.csv(norm_counts[ILRUNgenesUninf24hr_hits, ], file="results/DESeq2_sig_ILRUNgenesUninf24hr_LT07_rev_normalized_counts.csv")
-read_csv("results/sigILRUNgenesUninf24hr_LT07_rev.csv") %>% 
+
+david <- read_csv("results/sigILRUNgenesUninf24hr_LT07_rev.csv") %>% 
   select("X1") %>% 
   rename(gene = X1) %>% 
   separate(gene, c("gene", "gene1")) %>% 
   select(gene) %>% 
+  filter(str_detect(gene, "LOC") == FALSE) %>% 
   write.csv("results/ILRUNgenesUninf24hr_LT07_rev_david.csv")
 
 #making a PCA  
@@ -556,26 +607,93 @@ plot_ILRUNgenesUninf24hr <- ggplot(PCA_data_ILRUNgenesUninf24hr_pca_genes, aes(x
 
 ggsave(filename = "results/PCA_plot_ILRUNgenesUninf24hr.png", plot = plot_ILRUNgenesUninf24hr, width = 20, height = 20, dpi = 300, units = "cm")
 
+######################## Volcano plots ###################################
+
 forplotting_ILRUNgenesUninf24hr <- ILRUNgenesUninf24hr %>%
   as.data.frame() %>% 
   rownames_to_column() %>% 
   separate(rowname, c("gene", "gene1"), sep = "_") %>% 
   select(-gene1) %>% 
+  mutate(gene = str_replace(gene, "C6orf106", "ILRUN")) %>% 
+  mutate(gene = str_replace(gene, "ACKR3", "CXCR7")) %>%
+  mutate(gene = str_replace(gene, "CHUK","IkBKA")) %>%
+  mutate(gene = str_replace(gene, "TNFSF10", "TRAIL")) %>% 
   remove_rownames %>% 
   column_to_rownames(var="gene")
+
+write.csv(forplotting_ILRUNgenesUninf24hr, "results/ILRUNgenesUninf24hr_forplotting.csv")
+
+##show only significant immune genes ###
+tibble_ILRUNgenesUninf24hr <- ILRUNgenesUninf24hr %>%
+  as.data.frame() %>% 
+  rownames_to_column() %>% 
+  separate(rowname, c("gene", "gene1"), sep = "_") %>% 
+  select(-gene1) %>% 
+  mutate(gene = str_replace(gene, "C6orf106", "ILRUN")) %>% 
+  mutate(gene = str_replace(gene, "ACKR3", "CXCR7")) %>%
+  mutate(gene = str_replace(gene, "CHUK","IkBKA")) %>%
+  mutate(gene = str_replace(gene, "TNFSF10", "TRAIL"))
+
+
+immune_genes_Uninf24hr <- c('ISG15','IL6R','TLR7', 'STAT4', 'SOCS2','IL1B','IL15RA', 'AKT1', 'CD14', 'TLR2', 'IFIH1', 'OAS1',
+                           'JAK1', 'JAK2', 'CDK2', 'NFKB1', 'IL12A', 'IL8', 'TAP1', 'HLA-B', 'HLA-DMA', 'TRAIL', 'IL2RG', 'IL1R',
+                           'TGFB1', 'CCR1', 'CCR6', 'IL8', 'IFIT3', 'IL18', 'IFIT3', 'CXCR7', 'GDF11', 'LIFR', 'MMP14', 'THBS1', 'VAV3', 'PRKCQ',
+                           'IkBKA', 'ILRUN', 'VIM', 'FCGR2') %>%
+  as_tibble() %>% 
+  rename(gene = value) %>% 
+  left_join(tibble_ILRUNgenesUninf24hr , by = "gene") %>% 
+  filter(padj <0.05 ) %>% 
+  filter(log2FoldChange >0.75 | log2FoldChange < -0.75) 
+
+
+#########################################
 
 volcano_plot_ILRUNgenesUninf24hr <- EnhancedVolcano(forplotting_ILRUNgenesUninf24hr,
                                                    lab = rownames(forplotting_ILRUNgenesUninf24hr),
                                                    x = 'log2FoldChange',
-                                                   y = 'pvalue',
+                                                   y = 'padj',
+                                                   selectLab = c(immune_genes_Uninf24hr$gene),
                                                    xlim = c(-3, 3),
-                                                   title = 'ILRUN genes Uninfected 24hr',
+                                                   title = 'ILRUN genes 24hr',
                                                    pCutoff = 0.05,
-                                                   FCcutoff = 0.75,
-                                                   pointSize = 3.0,
-                                                   labSize = 3.0)
+                                                   FCcutoff = 0.5,
+                                                   pointSize = 4.0,
+                                                   labSize = 5.0,
+                                                   labCol = 'black',
+                                                   labFace = 'bold',
+                                                   boxedLabels = TRUE,
+                                                   colAlpha = 4/5,
+                                                   legendPosition = 'right',
+                                                   legendLabSize = 14,
+                                                   legendIconSize = 4.0,
+                                                   drawConnectors = TRUE,
+                                                   widthConnectors = 1.0,
+                                                   colConnectors = 'black')
 
-ggsave(filename = "results/volcano_plot_ILRUNgenesUninf24hr.png", plot = volcano_plot_ILRUNgenesUninf24hr, width = 20, height = 20, dpi = 300, units = "cm")
+ggsave(filename = "results/volcano_plot_ILRUNgenesUninf24hr.png", plot = volcano_plot_ILRUNgenesUninf24hr, width = 30, height = 25, dpi = 300, units = "cm")
+
+
+############### David Functional Annotation Clustering #############
+
+annotation_ILRUNgenesUninf24hr <- read.csv("data/ILRUNgenes_Uninf_24hrs_david_default_output.csv") %>% 
+  as_tibble() %>% 
+  filter(Category == "BIOCARTA" | Category == "KEGG_PATHWAY") %>% 
+  arrange(PValue) %>%
+  separate(Term, c("code", "Pathway"), sep = ":") %>% 
+  mutate(log10P = -log(PValue))
+
+write.csv(annotation_ILRUNgenesUninf24hr, "results/pathway_annotation_ILRUNgenesUninf24hr.csv")
+
+plot_ILRUNgenesUninf24hr_pathways <- ggplot(annotation_ILRUNgenesUninf24hr) + 
+  geom_bar(aes(x = reorder(Pathway, log10P), y = Fold_enrichment, fill = log10P), stat = 'identity') +
+  coord_flip() +
+  scale_fill_viridis_c() +
+  labs(title = "Pathways enriched for ILRUN regulated genes",
+       y = "Fold Enrichment",
+       x = "Pathway",
+       fill = "-log10(p-value)")
+
+ggsave(filename = "results/pathway_plot_ILRUNgenesUninf24hr.png", plot = plot_ILRUNgenesUninf24hr_pathways, width = 30, height = 20, dpi = 300, units = "cm")
 
 ########################## ILRUNgenesInf6hr ###################################################################### 
 ##'Which' provides positions of 'TRUE' values.
@@ -641,7 +759,7 @@ forplotting_ILRUNgenesInf6hr <- ILRUNgenesInf6hr %>%
   rownames_to_column() %>% 
   separate(rowname, c("gene", "gene1"), sep = "_") %>% 
   select(-gene1) %>%
-  mutate(gene = str_replace(gene, "C6orf106", "ILRUN"))
+  mutate(gene = str_replace(gene, "C6orf106", "ILRUN")) %>% 
   remove_rownames %>% 
   column_to_rownames(var="gene")
  
@@ -657,7 +775,7 @@ volcano_plot_ILRUNgenesInf6hr <- EnhancedVolcano(forplotting_ILRUNgenesInf6hr,
                                                     pointSize = 3.0,
                                                     labSize = 3.0)
 
-ggsave(filename = "results/volcano_plot_ILRUNgenesInf6hr.png", plot = volcano_plot_ILRUNgenesInf6hr, width = 20, height = 20, dpi = 300, units = "cm")
+ggsave(filename = "results/volcano_plot_ILRUNgenesInf6hr.png", plot = volcano_plot_ILRUNgenesInf6hr, width = 30, height = 25, dpi = 300, units = "cm")
 
 ########################## ILRUNgenesInf24hr ###################################################################### 
 # 'Which' provides positions of 'TRUE' values.
