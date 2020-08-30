@@ -656,7 +656,8 @@ Th1Th2 <- read.csv(("data/KEGG_Immune.system_Th1.and.Th2.cell.differentiation_ge
   select(gene_id) %>% 
   filter(gene_id != "NA") %>% 
   separate(gene_id, c("gene", "extra"), sep = ";") %>%
-  select(gene)
+  select(gene) %>% 
+  filter(gene != "	 M ")
 
 Th17 <- read.csv(("data/KEGG_Immune.system_Th17.cell.differentiation_genes.csv"),  row.names=NULL, header = FALSE) %>%
   as_tibble() %>% 
@@ -676,8 +677,31 @@ Toll <- read.csv(("data/KEGG_Immune.system_Toll-like.receptor.signaling.pathway_
   separate(gene_id, c("gene", "extra"), sep = ";") %>%
   select(gene)
 
-KEGG_immune_system <- left_join()
+KEGG_immune_system_joined <- full_join(APC, B_cell, by = "gene") %>% 
+  full_join(Chemokine,by = "gene") %>% 
+  full_join(Complement,by = "gene") %>% 
+  full_join(DNAsensing,by = "gene") %>% 
+  full_join(Fcepsilon,by = "gene") %>% 
+  full_join(Fcgamma,by = "gene") %>% 
+  full_join(Hematopoetic,by = "gene") %>%
+  full_join(IL17,by = "gene") %>% 
+  full_join(IntestinalIgA,by = "gene") %>% 
+  full_join(Lectin,by = "gene") %>% 
+  full_join(LeukocyeMigration, by = "gene") %>% 
+  full_join(NKT,by = "gene") %>% 
+  full_join(NOD,by = "gene") %>% 
+  full_join(Platelet,by = "gene") %>% 
+  full_join(RIGI,by = "gene") %>% 
+  full_join(Th17,by = "gene") %>% 
+  full_join(Tcell,by = "gene") %>% 
+  full_join(Th1Th2,by = "gene") %>% 
+  full_join(Toll,by = "gene")
 
+#### Trim all the white space ###########
+KEGG_immune_system <- stri_trim(KEGG_immune_system_joined$gene) %>% 
+  as_tibble() %>%
+  rename(gene = value) %>% 
+  filter(gene != "M")
 
 
 tibble_ILRUNgenesUninf6hr <- ILRUNgenesUninf6hr %>%
