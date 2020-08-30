@@ -22,6 +22,9 @@ library(vroom)
 library(stringr)
 library(EnhancedVolcano)
 library(viridis)
+library(ggsci)
+library(cowplot)
+library(patchwork)
 
 
 knitr::opts_chunk$set(
@@ -34,17 +37,154 @@ knitr::opts_chunk$set(
 
 
 
-```{r Figure 1 ILRUN inhibits IFN responses in Caco2 cells }
-summary(cars)
+```{r Figure 1. ILRUN inhibits IFN responses in Caco2 cells }
+
+
 
 ```
 
-## Including Plots
+```{r Figure 2A. PCA plot }
 
-You can also embed plots, for example:
+##### PCA plot ########
+#read in the metadata
+ILRUNgenesUninf_metadata <- read_csv("data/ilrun_metadata_siRNA_LT07_rev.csv") %>% 
+  filter(Infection == "Uninfected") %>% 
+  filter(timepoint == "6hr" | timepoint == "24hr") %>% 
+  filter(Lane == "L001") %>%
+  mutate(Name = str_extract(Sample, "^...."))
+#join with the counts data 
+ILRUNgenesUninf_expression <- read_csv("results/DESeq2_ilrun_siRNA_all_normalized_counts_LT07_rev.csv") %>% 
+  rename(gene_locus = X1) %>%
+  gather(Sample, expression, -gene_locus) %>%
+  filter(str_detect(Sample, 'L001')) %>% 
+  right_join(ILRUNgenesUninf_metadata, by = "Sample") 
+#scale gene expression for all samples 
+ILRUNgenesUninf_expression_scaled_genes <- ILRUNgenesUninf_expression %>%
+  spread(gene_locus, expression) %>%
+  select(-Infection, -siRNA, -timepoint, -Condition, -Lane, -HTSeq_rev, -Name) %>% 
+  column_to_rownames("Sample") %>% 
+  scale()
+#use the prcomp function on scaled samples
+ILRUNgenesUninf_pca_genes <- prcomp(ILRUNgenesUninf_expression_scaled_genes)
+#tidy data frame for plotting
+PCA_data_ILRUNgenesUninf_pca_genes <- ILRUNgenesUninf_pca_genes$x %>% 
+  as_tibble(rownames = "Sample") %>%
+  gather(PC, expression, -Sample) %>% 
+  left_join(ILRUNgenesUninf_metadata, by = "Sample") %>%
+  spread(PC, expression)
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+PCA_data_ILRUNgenesUninf_ <- ggplot(PCA_data_ILRUNgenesUninf_pca_genes, aes(x = PC1, y = PC2)) +
+  geom_point(aes(color = siRNA)) +
+  geom_text(aes(label = timepoint), size = 4) + 
+  theme_set(theme_classic(base_size = 10)) +
+  theme(legend.position = "none")+
+  labs(tag = "A")
+
+
+#plot the data
+Figure2A <- ggplot(PCA_data_ILRUNgenesUninf_pca_genes, aes(x = PC1, y = PC2)) +
+  geom_point(aes(fill = Condition),color = "black", pch = 21, size = 4)+
+  theme_set(theme_classic(base_size = 10)) +
+  labs(tag = "A")
+
+ggsave(
+  filename = "results/Figure2A.TIFF",
+  plot = Figure2A,
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = 7,
+  height = 7,
+  units = "cm",
+  dpi = 300,
+  limitsize = TRUE,)
+
+
+
+
+
+
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r Figure 2B. }
+
+######### Volcano plot #################
+
+p1 <- EnhancedVolcano(forplotting_ILRUNgenesUninf24hr,
+                                                   lab = rownames(forplotting_ILRUNgenesUninf24hr),
+                                                   x = 'log2FoldChange',
+                                                   y = 'padj',
+                                                   selectLab = c(immune_genes_Uninf24hr$gene),
+                                                   xlim = c(-3, 3),
+                                                   pCutoff = 0.05,
+                                                   FCcutoff = 0.5,
+                                                   pointSize = 1.0,
+                                                   labSize = 2.0,
+                                                   labCol = 'black',
+                                                   labFace = 'bold',
+                                                   boxedLabels = TRUE,
+                                                   colAlpha = 4/5,
+                                                   legendPosition = 'right',
+                                                   legendLabSize = 14,
+                                                   legendIconSize = 4.0,
+                                                   drawConnectors = TRUE,
+                                                   widthConnectors = 0.3,
+                                                   colConnectors = 'black')
+
+ Figure2B <-  p1 +
+   ggplot2::theme_set(theme_classic(base_size = 12)) +
+   ggplot2::theme(legend.position = "none",
+                  plot.title = element_blank(),
+                  plot.subtitle = element_blank(),
+                  plot.caption = element_blank()) +
+   ggplot2::labs(tag = "B")
+
+
+ggsave(
+  filename = "results/Figure2B.TIFF",
+  plot = Figure2B,
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = 11 ,
+  height = 8,
+  units = "cm",
+  dpi = 300,
+  limitsize = TRUE,)
+
+
+
+```
+
+```{r Figure2C. Enriched pathways }
+
+
+###### Pathway enrichment  ##############
+Figure2C <- ggplot(annotation_ILRUNgenesUninf24hr) + 
+  geom_bar(aes(x = reorder(Pathway, log10P), y = Count, fill = log10P), stat = 'identity') +
+  coord_flip() +
+  scale_fill_viridis_c() +
+  theme_set(theme_classic(base_size = 8)) +
+  theme(legend.key.size = unit(0.2, "cm")) +
+  labs(y = "Number of ILRUN genes involved",
+       x = "Pathway",
+       fill = "-log10(P)", 
+       tag = "C")
+  
+  
+ggsave(
+  filename = "results/Figure2C.TIFF",
+  plot = Figure2C,
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = 18 ,
+  height = 8,
+  units = "cm",
+  dpi = 300,
+  limitsize = TRUE,)
+
+
+
+```

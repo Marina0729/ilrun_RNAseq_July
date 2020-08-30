@@ -495,6 +495,191 @@ forplotting_ILRUNgenesUninf6hr <- ILRUNgenesUninf6hr %>%
 write.csv(forplotting_ILRUNgenesUninf6hr, "results/ILRUNgenesUninf6hr_forplotting.csv")
 
 ##show only significant immune genes ###
+
+APC <- read.csv(("data/KEGG_Immune.system_Antigen.processing.and.presentation_genes.csv"),  row.names=NULL, header = FALSE) %>%
+  as_tibble() %>% 
+  separate(V1, c("desription", "gene"), sep = "RefSeq") %>% 
+  mutate(gene_id = str_remove_all(gene, "[\\),]")) %>% 
+  select(gene_id) %>% 
+  filter(gene_id != "NA") %>% 
+  separate(gene_id, c("gene", "extra"), sep = ";") %>%
+  select(gene)
+
+B_cell <- read.csv(("data/KEGG_Immune.system_B.cell.receptor.signalling.pathway_genes.csv"),  row.names=NULL, header = FALSE) %>%
+  as_tibble() %>% 
+  separate(V1, c("desription", "gene"), sep = "RefSeq") %>% 
+  mutate(gene_id = str_remove_all(gene, "[\\),]")) %>% 
+  select(gene_id) %>% 
+  filter(gene_id != "NA") %>% 
+  separate(gene_id, c("gene", "extra"), sep = ";") %>%
+  select(gene)
+
+Chemokine <- read.csv(("data/KEGG_Immune.system_Chemokine.signaling.pathway_genes.csv"),  row.names=NULL, header = FALSE) %>%
+  as_tibble() %>% 
+  separate(V1, c("desription", "gene"), sep = "RefSeq") %>% 
+  mutate(gene_id = str_remove_all(gene, "[\\),]")) %>% 
+  select(gene_id) %>% 
+  filter(gene_id != "NA") %>% 
+  separate(gene_id, c("gene", "extra"), sep = ";") %>%
+  select(gene)
+
+Complement <- read.csv(("data/KEGG_Immune.system_Complement.and.coagulation.cascades_genes.csv"),  row.names=NULL, header = FALSE) %>%
+  as_tibble() %>% 
+  separate(V1, c("desription", "gene"), sep = "RefSeq") %>% 
+  mutate(gene_id = str_remove_all(gene, "[\\),]")) %>% 
+  select(gene_id) %>% 
+  filter(gene_id != "NA") %>% 
+  separate(gene_id, c("gene", "extra"), sep = ";") %>%
+  select(gene)
+
+Lectin <- read.csv(("data/KEGG_Immune.system_C-type.lectin.receptor.signalling.pathway_genes.csv"),  row.names=NULL, header = FALSE) %>%
+  as_tibble() %>% 
+  separate(V1, c("desription", "gene"), sep = "RefSeq") %>% 
+  mutate(gene_id = str_remove_all(gene, "[\\),]")) %>% 
+  select(gene_id) %>% 
+  filter(gene_id != "NA") %>% 
+  separate(gene_id, c("gene", "extra"), sep = ";") %>%
+  select(gene)
+
+DNAsensing <- read.csv(("data/KEGG_Immune.system_Cytosolic.DNA-sensing.pathway_genes.csv"),  row.names=NULL, header = FALSE) %>%
+  as_tibble() %>% 
+  separate(V1, c("desription", "gene"), sep = "RefSeq") %>% 
+  mutate(gene_id = str_remove_all(gene, "[\\),]")) %>% 
+  select(gene_id) %>% 
+  filter(gene_id != "NA") %>% 
+  separate(gene_id, c("gene", "extra"), sep = ";") %>%
+  select(gene)
+
+Fcepsilon <- read.csv(("data/KEGG_Immune.system_Fc.epsilon.RI.signaling.pathway_genes.csv"),  row.names=NULL, header = FALSE) %>%
+  as_tibble() %>% 
+  separate(V1, c("desription", "gene"), sep = "RefSeq") %>% 
+  mutate(gene_id = str_remove_all(gene, "[\\),]")) %>% 
+  select(gene_id) %>% 
+  filter(gene_id != "NA") %>% 
+  separate(gene_id, c("gene", "extra"), sep = ";") %>%
+  select(gene)
+
+Fcgamma <- read.csv(("data/KEGG_Immune.system_Fc.gamma.R-mediated.phagocytosis_genes.csv"),  row.names=NULL, header = FALSE) %>%
+  as_tibble() %>% 
+  separate(V1, c("desription", "gene"), sep = "RefSeq") %>% 
+  mutate(gene_id = str_remove_all(gene, "[\\),]")) %>% 
+  select(gene_id) %>% 
+  filter(gene_id != "NA") %>% 
+  separate(gene_id, c("gene", "extra"), sep = ";") %>%
+  select(gene)
+
+Hematopoetic <- read.csv(("data/KEGG_Immune.system_Hematopoietic.cell.lineage_genes.csv"),  row.names=NULL, header = FALSE) %>%
+  as_tibble() %>% 
+  separate(V1, c("desription", "gene"), sep = "RefSeq") %>% 
+  mutate(gene_id = str_remove_all(gene, "[\\),]")) %>% 
+  select(gene_id) %>% 
+  filter(gene_id != "NA") %>% 
+  separate(gene_id, c("gene", "extra"), sep = ";") %>%
+  select(gene)
+
+IL17 <- read.csv(("data/KEGG_Immune.system_IL-17.signaling.pathway_genes.csv"),  row.names=NULL, header = FALSE) %>%
+  as_tibble() %>% 
+  separate(V1, c("desription", "gene"), sep = "RefSeq") %>% 
+  mutate(gene_id = str_remove_all(gene, "[\\),]")) %>% 
+  select(gene_id) %>% 
+  filter(gene_id != "NA") %>% 
+  separate(gene_id, c("gene", "extra"), sep = ";") %>%
+  select(gene)
+
+IntestinalIgA <- read.csv(("data/KEGG_Immune.system_Intestinal.immune.network.for.IgA.production_genes.csv"),  row.names=NULL, header = FALSE) %>%
+  as_tibble() %>% 
+  separate(V1, c("desription", "gene"), sep = "RefSeq") %>% 
+  mutate(gene_id = str_remove_all(gene, "[\\),]")) %>% 
+  select(gene_id) %>% 
+  filter(gene_id != "NA") %>% 
+  separate(gene_id, c("gene", "extra"), sep = ";") %>%
+  select(gene)
+
+LeukocyeMigration <- read.csv(("data/KEGG_Immune.system_Leukocyte.transendothelial.migration_genes.csv"),  row.names=NULL, header = FALSE) %>%
+  as_tibble() %>% 
+  separate(V1, c("desription", "gene"), sep = "RefSeq") %>% 
+  mutate(gene_id = str_remove_all(gene, "[\\),]")) %>% 
+  select(gene_id) %>% 
+  filter(gene_id != "NA") %>% 
+  separate(gene_id, c("gene", "extra"), sep = ";") %>%
+  select(gene)
+
+NKT <- read.csv(("data/KEGG_Immune.system_Natural.killer.cell.mediated.cytotoxicity_genes.csv"),  row.names=NULL, header = FALSE) %>%
+  as_tibble() %>% 
+  separate(V1, c("desription", "gene"), sep = "RefSeq") %>% 
+  mutate(gene_id = str_remove_all(gene, "[\\),]")) %>% 
+  select(gene_id) %>% 
+  filter(gene_id != "NA") %>% 
+  separate(gene_id, c("gene", "extra"), sep = ";") %>%
+  select(gene)
+
+NOD <- read.csv(("data/KEGG_Immune.system_NOD-like.receptor.signaling.pathway_genes.csv"),  row.names=NULL, header = FALSE) %>%
+  as_tibble() %>% 
+  separate(V1, c("desription", "gene"), sep = "RefSeq") %>% 
+  mutate(gene_id = str_remove_all(gene, "[\\),]")) %>% 
+  select(gene_id) %>% 
+  filter(gene_id != "NA") %>% 
+  separate(gene_id, c("gene", "extra"), sep = ";") %>%
+  select(gene)
+
+Platelet <- read.csv(("data/KEGG_Immune.system_Platelet.activation_genes.csv"),  row.names=NULL, header = FALSE) %>%
+  as_tibble() %>% 
+  separate(V1, c("desription", "gene"), sep = "RefSeq") %>% 
+  mutate(gene_id = str_remove_all(gene, "[\\),]")) %>% 
+  select(gene_id) %>% 
+  filter(gene_id != "NA") %>% 
+  separate(gene_id, c("gene", "extra"), sep = ";") %>%
+  select(gene)
+
+RIGI <- read.csv(("data/KEGG_Immune.system_RIG-I-like.receptor.signaling.pathway_genes.csv"),  row.names=NULL, header = FALSE) %>%
+  as_tibble() %>% 
+  separate(V1, c("desription", "gene"), sep = "RefSeq") %>% 
+  mutate(gene_id = str_remove_all(gene, "[\\),]")) %>% 
+  select(gene_id) %>% 
+  filter(gene_id != "NA") %>% 
+  separate(gene_id, c("gene", "extra"), sep = ";") %>%
+  select(gene)
+
+Tcell <- read.csv(("data/KEGG_Immune.system_T.cell.receptor.signalling.pathway_genes.csv"),  row.names=NULL, header = FALSE) %>%
+  as_tibble() %>% 
+  separate(V1, c("desription", "gene"), sep = "RefSeq") %>% 
+  mutate(gene_id = str_remove_all(gene, "[\\),]")) %>% 
+  select(gene_id) %>% 
+  filter(gene_id != "NA") %>% 
+  separate(gene_id, c("gene", "extra"), sep = ";") %>%
+  select(gene)
+
+Th1Th2 <- read.csv(("data/KEGG_Immune.system_Th1.and.Th2.cell.differentiation_genes.csv"),  row.names=NULL, header = FALSE) %>%
+  as_tibble() %>% 
+  separate(V1, c("desription", "gene"), sep = "RefSeq") %>% 
+  mutate(gene_id = str_remove_all(gene, "[\\),]")) %>% 
+  select(gene_id) %>% 
+  filter(gene_id != "NA") %>% 
+  separate(gene_id, c("gene", "extra"), sep = ";") %>%
+  select(gene)
+
+Th17 <- read.csv(("data/KEGG_Immune.system_Th17.cell.differentiation_genes.csv"),  row.names=NULL, header = FALSE) %>%
+  as_tibble() %>% 
+  separate(V1, c("desription", "gene"), sep = "RefSeq") %>% 
+  mutate(gene_id = str_remove_all(gene, "[\\),]")) %>% 
+  select(gene_id) %>% 
+  filter(gene_id != "NA") %>% 
+  separate(gene_id, c("gene", "extra"), sep = ";") %>%
+  select(gene)
+
+Toll <- read.csv(("data/KEGG_Immune.system_Toll-like.receptor.signaling.pathway_genes.csv"),  row.names=NULL, header = FALSE) %>%
+  as_tibble() %>% 
+  separate(V1, c("desription", "gene"), sep = "RefSeq") %>% 
+  mutate(gene_id = str_remove_all(gene, "[\\),]")) %>% 
+  select(gene_id) %>% 
+  filter(gene_id != "NA") %>% 
+  separate(gene_id, c("gene", "extra"), sep = ";") %>%
+  select(gene)
+
+KEGG_immune_system <- left_join()
+
+
+
 tibble_ILRUNgenesUninf6hr <- ILRUNgenesUninf6hr %>%
   as.data.frame() %>% 
   rownames_to_column() %>% 
@@ -601,7 +786,7 @@ PCA_data_ILRUNgenesUninf24hr_pca_genes <- ILRUNgenesUninf24hr_pca_genes$x %>%
   spread(PC, expression)
 
 plot_ILRUNgenesUninf24hr <- ggplot(PCA_data_ILRUNgenesUninf24hr_pca_genes, aes(x = PC1, y = PC2)) +
-  geom_point(aes(color = siRNA), size = 6)+
+  geom_point(aes(color = Condition), size = 6)+
   geom_text(aes(label = Name), size = 4) +
   labs(title = "Principle Component Analysis ILRUNgenesUninf24hr")
 
@@ -632,13 +817,14 @@ tibble_ILRUNgenesUninf24hr <- ILRUNgenesUninf24hr %>%
   mutate(gene = str_replace(gene, "C6orf106", "ILRUN")) %>% 
   mutate(gene = str_replace(gene, "ACKR3", "CXCR7")) %>%
   mutate(gene = str_replace(gene, "CHUK","IkBKA")) %>%
-  mutate(gene = str_replace(gene, "TNFSF10", "TRAIL"))
+  mutate(gene = str_replace(gene, "TNFSF10", "TRAIL")) %>% 
+  mutate(gene = str_replace(gene, "EP300", "P300"))
 
 
 immune_genes_Uninf24hr <- c('ISG15','IL6R','TLR7', 'STAT4', 'SOCS2','IL1B','IL15RA', 'AKT1', 'CD14', 'TLR2', 'IFIH1', 'OAS1',
                            'JAK1', 'JAK2', 'CDK2', 'NFKB1', 'IL12A', 'IL8', 'TAP1', 'HLA-B', 'HLA-DMA', 'TRAIL', 'IL2RG', 'IL1R',
                            'TGFB1', 'CCR1', 'CCR6', 'IL8', 'IFIT3', 'IL18', 'IFIT3', 'CXCR7', 'GDF11', 'LIFR', 'MMP14', 'THBS1', 'VAV3', 'PRKCQ',
-                           'IkBKA', 'ILRUN', 'VIM', 'FCGR2') %>%
+                           'IkBKA', 'ILRUN', 'VIM', 'FCGR2', "P300") %>%
   as_tibble() %>% 
   rename(gene = value) %>% 
   left_join(tibble_ILRUNgenesUninf24hr , by = "gene") %>% 
@@ -685,11 +871,11 @@ annotation_ILRUNgenesUninf24hr <- read.csv("data/ILRUNgenes_Uninf_24hrs_david_de
 write.csv(annotation_ILRUNgenesUninf24hr, "results/pathway_annotation_ILRUNgenesUninf24hr.csv")
 
 plot_ILRUNgenesUninf24hr_pathways <- ggplot(annotation_ILRUNgenesUninf24hr) + 
-  geom_bar(aes(x = reorder(Pathway, log10P), y = Fold_enrichment, fill = log10P), stat = 'identity') +
+  geom_bar(aes(x = reorder(Pathway, log10P), y = Count, fill = log10P), stat = 'identity') +
   coord_flip() +
   scale_fill_viridis_c() +
   labs(title = "Pathways enriched for ILRUN regulated genes",
-       y = "Fold Enrichment",
+       y = "Number of ILRUN genes involved",
        x = "Pathway",
        fill = "-log10(p-value)")
 
