@@ -703,28 +703,28 @@ KEGG_immune_system <- stri_trim(KEGG_immune_system_joined$gene) %>%
   rename(gene = value) %>% 
   filter(gene != "M")
 
-
 tibble_ILRUNgenesUninf6hr <- ILRUNgenesUninf6hr %>%
   as.data.frame() %>% 
   rownames_to_column() %>% 
   separate(rowname, c("gene", "gene1"), sep = "_") %>% 
-  select(-gene1) %>% 
-  mutate(gene = str_replace(gene, "C6orf106", "ILRUN")) %>% 
+  select(-gene1)
+
+#526 genes of the immune system detected
+#344 genes significantly different between siNEG and siILRUN 
+#57 genes with log2FC more than 0.75
+
+immune_genes_Uninf6hr <- KEGG_immune_system %>%
+  left_join(tibble_ILRUNgenesUninf6hr , by = "gene") %>%
+  filter(baseMean != "NA") %>% 
+  filter(padj <0.05 ) %>% 
+  filter(log2FoldChange >0.75 | log2FoldChange < -0.75) 
+  
+mutate(gene = str_replace(gene, "C6orf106", "ILRUN")) %>% 
   mutate(gene = str_replace(gene, "ACKR3", "CXCR7")) %>%
   mutate(gene = str_replace(gene, "CHUK","IkBKA")) %>%
   mutate(gene = str_replace(gene, "TNFSF10", "TRAIL"))
 
 
-immune_genes_Uninf6hr <- c('ISG15','IL6R','TLR7', 'STAT4', 'SOCS2','IL1B','IL15RA', 'AKT1', 'CD14', 'TLR2', 'IFIH1', 'OAS1',
-                  'JAK1', 'JAK2', 'CDK2', 'NFKB1', 'IL12A', 'IL8', 'TAP1', 'HLA-B', 'HLA-DMA', 'TRAIL', 'IL2RG', 'IL1R',
-                  'TGFB1', 'CCR1', 'CCR6', 'IL8', 'IFIT3', 'IL18', 'IFIT3', 'CXCR7', 'GDF11', 'LIFR', 'MMP14', 'THBS1', 'VAV3', 'PRKCQ',
-                  'IkBKA', 'ILRUN', 'VIM', 'FCGR2') %>%
-  as_tibble() %>% 
-  rename(gene = value) %>% 
-  left_join(tibble_ILRUNgenesUninf6hr , by = "gene") %>% 
-  filter(padj <0.05 ) %>% 
-  filter(log2FoldChange >0.75 | log2FoldChange < -0.75) 
-  
 
 #########################################
 
@@ -844,6 +844,19 @@ tibble_ILRUNgenesUninf24hr <- ILRUNgenesUninf24hr %>%
   mutate(gene = str_replace(gene, "TNFSF10", "TRAIL")) %>% 
   mutate(gene = str_replace(gene, "EP300", "P300"))
 
+tibble_ILRUNgenesUninf24hr_name <- ILRUNgenesUninf24hr %>%
+  as.data.frame() %>% 
+  rownames_to_column() %>% 
+  separate(rowname, c("gene", "gene1"), sep = "_") %>% 
+  select(-gene1) 
+
+KEGG_immune_system_genes_Uninf24hr <- KEGG_immune_system %>%
+  left_join(tibble_ILRUNgenesUninf24hr_name , by = "gene") %>%
+  filter(baseMean != "NA") %>% 
+  filter(padj <0.05 ) %>% 
+  filter(log2FoldChange >0.75 | log2FoldChange < -0.75) 
+
+write.csv(KEGG_immune_system_genes_Uninf24hr, "results/KEGG_immune_system_genes_Uninf24hr.csv")
 
 immune_genes_Uninf24hr <- c('ISG15','IL6R','TLR7', 'STAT4', 'SOCS2','IL1B','IL15RA', 'AKT1', 'CD14', 'TLR2', 'IFIH1', 'OAS1',
                            'JAK1', 'JAK2', 'CDK2', 'NFKB1', 'IL12A', 'IL8', 'TAP1', 'HLA-B', 'HLA-DMA', 'TRAIL', 'IL2RG', 'IL1R',
@@ -1084,19 +1097,17 @@ lessLT07_rev_expression <- read_csv("results/DESeq2_ilrun_siRNA_LT07_rev_all_nor
   gather(Sample, expression, -gene_locus) %>%
   left_join(metadata_rev_LT07, by = "Sample") %>% 
   separate(gene_locus, c("gene", "gene1"), sep = "_") %>% 
-  select(-gene1) %>%
-  mutate(Sample = str_remove(Sample, ""))
+  select(-gene1)
 
-write.csv(lessLT07_rev_expression, file="results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv")
+write.csv(lessLT07_rev_expression, "results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv")
 
-tail(lessLT07_rev_expression)
 
-TGFB <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_rev_expression.csv") %>%
-  filter(gene_locus == "TGFB") %>% 
+ACE2 <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
+  filter(gene == "ACE2") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
   facet_wrap(~timepoint)+
-  labs(title = "TGFB", 
+  labs(title = "ACE2", 
        x = "") +
   theme( axis.text = element_text( size = 8 ),
          axis.text.x = element_text( size = 8 ),
@@ -1104,6 +1115,16 @@ TGFB <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_rev_expression.csv") %>%
 
 ggsave(filename = "results/TGFB.png", plot = TGFB, width = 25, height = 20, dpi = 300, units = "cm")
 
+TRIM31 <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
+  filter(gene_locus == "XLOC_028190_TRIM31") %>% 
+  ggplot(aes(x= Infection, y = expression, color = siRNA)) +
+  geom_boxplot()+
+  facet_wrap(~timepoint)+
+  labs(title = "TRIM31", 
+       x = "") +
+  theme( axis.text = element_text( size = 8 ),
+         axis.text.x = element_text( size = 8 ),
+         axis.title = element_text( size = 8))
 
 
 

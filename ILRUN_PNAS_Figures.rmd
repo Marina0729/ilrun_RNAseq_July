@@ -25,6 +25,7 @@ library(viridis)
 library(ggsci)
 library(cowplot)
 library(patchwork)
+library(ggsignif)
 
 
 knitr::opts_chunk$set(
@@ -37,11 +38,206 @@ knitr::opts_chunk$set(
 
 
 
-```{r Figure 1. ILRUN inhibits IFN responses in Caco2 cells }
+```{r Figure 1A siRNA validation  }
+
+sirna_valid <- read.csv("data/siRNA_validation.csv")
+
+###perform ANOVA ########
+siRNA_aov <- aov(Ct ~ siRNA, data = sirna_valid)
+summary(siRNA_aov)
+
+###Summarise for plotting bar graph #####
+siRNA_valid_stats <- sirna_valid %>% 
+  group_by(siRNA) %>% 
+  summarise(mean = mean(Ct), sd = sd(Ct)) %>% 
+  mutate(upper = mean + sd) %>% 
+  mutate(lower = mean - sd)
+
+#####order the x axis non-alphabetical##############
+siRNA_valid_stats$siRNA <- factor(siRNA_valid_stats$siRNA,levels =c("siNEG", "siILRUN"))
+
+##### plot the data ################
+Figure1A <- ggplot(siRNA_valid_stats, aes(y= mean, x=siRNA))+
+  geom_bar(stat= "Identity", color= "black", fill = "grey", position = position_dodge()) +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
+  geom_signif(comparisons=list(c("siNEG", "siILRUN")), annotations="***", y_position = 1.1, tip_length = 0, vjust=0.4) +
+  theme_set(theme_classic(base_size = 8)) +
+  theme(axis.title.x = element_text(size = 8))+
+  labs(tag = "A",
+       y ="Relative ILRUN mRNA",
+       x = "")
+  
+ggsave(
+  filename = "results/Figure1A.TIFF",
+  plot = Figure1A,
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = 5.5,
+  height = 5.5,
+  units = "cm",
+  dpi = 300,
+  limitsize = TRUE,)
 
 
 
 ```
+
+```{r Figure 1B polyI:C }
+
+sirna_valid <- read.csv("data/siRNA_validation.csv")
+
+###perform ANOVA ########
+siRNA_aov <- aov(Ct ~ siRNA, data = sirna_valid)
+summary(siRNA_aov)
+
+###Summarise for plotting bar graph #####
+siRNA_valid_stats <- sirna_valid %>% 
+  group_by(siRNA) %>% 
+  summarise(mean = mean(Ct), sd = sd(Ct)) %>% 
+  mutate(upper = mean + sd) %>% 
+  mutate(lower = mean - sd)
+
+#####order the x axis non-alphabetical##############
+siRNA_valid_stats$siRNA <- factor(siRNA_valid_stats$siRNA,levels =c("siNEG", "siILRUN"))
+
+##### plot the data ################
+Figure1A <- ggplot(siRNA_valid_stats, aes(y= mean, x=siRNA))+
+  geom_bar(stat= "Identity", color= "black", fill = "grey", position = position_dodge()) +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
+  geom_signif(comparisons=list(c("siNEG", "siILRUN")), annotations="***", y_position = 1.1, tip_length = 0, vjust=0.4) +
+  theme_set(theme_classic(base_size = 8)) +
+  labs(tag = "B",
+       y ="Relative ILRUN mRNA",
+       x = "")
+  
+ggsave(
+  filename = "results/Figure1B.TIFF",
+  plot = Figure1B,
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = 5.5,
+  height = 5.5,
+  units = "cm",
+  dpi = 300,
+  limitsize = TRUE,)
+
+
+
+```
+
+```{r Figure 1C kinetics titres  }
+
+kinetics_titres <- read.csv("data/kinetics_titres.csv")
+
+
+###Summarise for plotting bar graph #####
+kinetics_titres_stats <- kinetics_titres %>% 
+  group_by(timepoint) %>% 
+  summarise(mean = mean(TCID50), sd = sd(TCID50)) %>% 
+  mutate(upper = mean + sd) %>% 
+  mutate(lower = mean - sd) %>%
+  mutate(timepoint = as.numeric(timepoint))
+
+##### plot the data ################
+Figure1C <- ggplot(kinetics_titres_stats, aes(y= mean, x=timepoint))+
+  geom_line()+
+  geom_point()+
+  geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
+  theme_set(theme_classic(base_size = 8)) +
+  labs(x = "time post infection(hrs)",
+       y = "TCID50 per ml",
+       tag = "C")
+  
+ggsave(
+  filename = "results/Figure1C.TIFF",
+  plot = Figure1C,
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = 5.5,
+  height = 5.5,
+  units = "cm",
+  dpi = 300,
+  limitsize = TRUE)
+
+```
+
+```{r Figure 1D kinetics RNA  }
+
+kinetics_RNA <- read.csv("data/kinetics_RNA.csv")
+
+###Summarise for plotting bar graph #####
+kinetics_RNA_stats <- kinetics_RNA %>% 
+  group_by(timepoint) %>% 
+  summarise(mean = mean(Ct), sd = sd(Ct)) %>% 
+  mutate(upper = mean + sd) %>% 
+  mutate(lower = mean - sd) %>%
+  mutate(timepoint = as.numeric(timepoint))
+
+##### plot the data ################
+Figure1D <- ggplot(kinetics_RNA_stats, aes(y= mean, x=timepoint))+
+  geom_line()+
+  geom_point()+
+  geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
+  theme_set(theme_classic(base_size = 8)) +
+  labs(y = "SARS-CoV-2 RNA",
+       x = "time post infection(hrs)",
+       tag = "D")
+  
+ggsave(
+  filename = "results/Figure1D.TIFF",
+  plot = Figure1D,
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = 5.5,
+  height = 5.5,
+  units = "cm",
+  dpi = 300,
+  limitsize = TRUE)
+
+```
+
+
+```{r Figure 1E kinetics protein  }
+
+kinetics_protein <- read.csv("data/kinetics_protein.csv")
+
+
+###Summarise for plotting bar graph #####
+kinetics_protein_stats <- kinetics_protein %>% 
+  group_by(timepoint) %>% 
+  summarise(mean = mean(protein), sd = sd(protein)) %>% 
+  mutate(upper = mean + sd) %>% 
+  mutate(lower = mean - sd) %>%
+  mutate(timepoint = as.numeric(timepoint))
+
+##### plot the data ################
+Figure1E <- ggplot(kinetics_protein_stats, aes(y= mean, x=timepoint))+
+  geom_line()+
+  geom_point()+
+  geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
+  theme_set(theme_classic(base_size = 8)) +
+  labs(y = "SARS-CoV-2 N protein",
+       x = "time post infection(hrs)",
+       tag = "E")
+  
+ggsave(
+  filename = "results/Figure1E.TIFF",
+  plot = Figure1E,
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = 5.5,
+  height = 5.5,
+  units = "cm",
+  dpi = 300,
+  limitsize = TRUE)
+
+```
+
 
 ```{r Figure 2A. PCA plot }
 
@@ -118,7 +314,7 @@ p1 <- EnhancedVolcano(forplotting_ILRUNgenesUninf24hr,
                                                    selectLab = c(immune_genes_Uninf24hr$gene),
                                                    xlim = c(-3, 3),
                                                    pCutoff = 0.05,
-                                                   FCcutoff = 0.5,
+                                                   FCcutoff = 0.75,
                                                    pointSize = 1.0,
                                                    labSize = 2.0,
                                                    labCol = 'black',
@@ -148,7 +344,7 @@ ggsave(
   path = NULL,
   scale = 1,
   width = 11 ,
-  height = 8,
+  height = 7,
   units = "cm",
   dpi = 300,
   limitsize = TRUE,)
@@ -184,6 +380,105 @@ ggsave(
   units = "cm",
   dpi = 300,
   limitsize = TRUE,)
+
+
+
+```
+
+
+
+
+```{r Figure 3C PCA for infection}
+
+
+plot_CoV2genesILRUN24hr <- ggplot(PCA_data_CoV2genesILRUN24hr_pca_genes, aes(x = PC1, y = PC2)) +
+  geom_point(aes(color = Infection), size = 6)+
+  geom_text(aes(label = Name), size = 4) +
+  labs(title = "Principle Component Analysis CoV2genesILRUN24hr")
+
+ggsave(filename = "results/PCA_plot_CoV2genesILRUN24hr.png", plot = plot_CoV2genesILRUN24hr, width = 20, height = 20, dpi = 300, units = "cm")
+
+
+
+
+```
+
+```{r Figure 4A Known hots genes for SARSCOV2}
+
+ACE2 <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
+  filter(gene == "ACE2")%>%
+  filter(timepoint == "24hr") %>% 
+  ggplot(aes(x= Infection, y = expression, color = siRNA)) +
+  geom_boxplot()+
+  labs(x = "",
+       y = "normalized counts",
+       title = "ACE2")+
+  theme_set(theme_classic(base_size = 8))
+
+TMPRSS2 <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
+  filter(gene == "TMPRSS2")%>%
+  filter(timepoint == "24hr") %>% 
+  ggplot(aes(x= Infection, y = expression, color = siRNA)) +
+  geom_boxplot()+
+  labs(x = "",
+       y = "normalized counts",
+       title ="TMPRSS2")+
+  theme_set(theme_classic(base_size = 8))
+
+FURIN <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
+  filter(gene == "FURIN")%>%
+  filter(timepoint == "24hr") %>% 
+  ggplot(aes(x= Infection, y = expression, color = siRNA)) +
+  geom_boxplot()+
+  labs(x = "",
+       y = "normalized counts",
+       title ="FURIN")+
+  theme_set(theme_classic(base_size = 8))
+
+CTSL <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
+  filter(gene == "CTSL")%>%
+  filter(timepoint == "24hr") %>% 
+  ggplot(aes(x= Infection, y = expression, color = siRNA)) +
+  geom_boxplot()+
+  labs(x = "",
+       y = "normalized counts",
+       title ="CTSL")+
+  theme_set(theme_classic(base_size = 8))
+
+CTSB <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
+  filter(gene == "CTSB")%>%
+  filter(timepoint == "24hr") %>% 
+  ggplot(aes(x= Infection, y = expression, color = siRNA)) +
+  geom_boxplot()+
+  labs(x = "",
+       y = "normalized counts",
+       title ="CTSB")+
+  theme_set(theme_classic(base_size = 8))
+
+
+legend <- get_legend(ACE2) 
+
+plot <- plot_grid(ACE2 + theme(legend.position="none"),
+                  TMPRSS2 + theme(legend.position="none"),
+                  CTSL + theme(legend.position="none"),
+                  CTSB + theme(legend.position = "none"))
+
+Figure4A <- plot_grid(plot, legend, rel_widths = c(3, .5))
+knownSARSCOV2hostgenes <- plot_grid(plot, legend, rel_widths = c(3, .5))
+
+ggsave(
+  filename = "results/Figure4A.TIFF",
+  plot = Figure4A,
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = 11 ,
+  height = 11,
+  units = "cm",
+  dpi = 300,
+  limitsize = TRUE,)
+
+ggsave(filename = "results/knownSARSCOV2hostgenes_CTSB.png", plot = knownSARSCOV2hostgenes, width = 15, height = 12, dpi = 300, units = "cm")
 
 
 

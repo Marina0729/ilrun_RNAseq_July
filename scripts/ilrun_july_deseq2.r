@@ -20,19 +20,34 @@ library(stringr)
 
 rm(list=ls())
 
-df <- read.csv("data/ilrun_counts_siRNA.csv", header=TRUE, row.names=1)
-md <- read.csv("data/ilrun_metadata_siRNA.csv", header=TRUE, row.names=1)
+#splice the count data 
+read.csv("data/all_samples_rev-intersect.csv") %>% 
+  select(-LT41_L001_rev.intersect) %>% 
+  select(-LT41_L002_rev.intersect) %>% 
+  select(-LT42_L001_rev.intersect) %>% 
+  select(-LT42_L002_rev.intersect) %>% 
+  select(-LT07_L001_rev.intersect) %>% 
+  select(-LT07_L002_rev.intersect) %>%
+  as_tibble() %>% 
+  write.csv("data/ilrun_counts_siRNA_LT07_rev.csv",  row.names=FALSE)
 
-df_LT07 <- read.csv("data/ilrun_counts_siRNA.csv", header=TRUE, row.names=1) %>% 
-  select(-LT07_L001, -LT07_L002)
-md_LT07 <- read.csv("data/ilrun_metadata_siRNA_LT07.csv", header=TRUE, row.names=1)
-
-all(rownames(md) == colnames (df))
-all(rownames(md_LT07) == colnames (df_LT07))
+df <- read.csv("data/ilrun_counts_siRNA_LT07_rev.csv", header=TRUE, row.names=1)
 
 dim(df)
-dim(df_LT07)
 
+#splice the metadata
+ilrun_metadata_siRNA_rev_LT07 <- read.csv("data/ilrun_metadata_siRNA_LT07.csv") %>%
+  mutate(HTSeq_rev = "rev.intersect" ) %>% 
+  unite("Sample", Sample, HTSeq_rev, remove = FALSE) %>% 
+  write.csv("data/ilrun_metadata_siRNA_LT07_rev.csv")
+
+md <- read.csv("data/ilrun_metadata_siRNA_LT07_rev.csv", header=TRUE, row.names=2)
+
+
+dim(md)
+
+#merge count and metadata file
+all(rownames(md) == colnames (df))
 
 # Calculate counts per million.
 # Filter rows: at least 3 samples must have at least 1 cpm.
@@ -41,12 +56,7 @@ cpm <- apply(df, 2, function(x) (x/sum(x))*1000000)
 keep <- rowSums( cpm >= 1 ) >=4
 df_filtered <- df[ keep, ]
 
-cpm_LT07 <- apply(df_LT07, 2, function(x) (x/sum(x))*1000000)
-keep_LT07 <- rowSums( cpm_LT07 >= 1 ) >=4
-df_filtered_LT07 <- df_LT07[ keep_LT07, ]
-
 dim(df_filtered)
-dim(df_filtered_LT07)
 
 
 # Construct a SummarizedExperiment object:
@@ -55,51 +65,34 @@ dds <- DESeqDataSetFromMatrix(
   colData = md,
   design = ~ Condition + Lane) # ~ is representative of 'by', i.e. compare by condition
 
-dds_LT07 <- DESeqDataSetFromMatrix(
-  countData = df_filtered_LT07,
-  colData = md_LT07,
-  design = ~ Condition + Lane) # ~ is representative of 'by', i.e. compare by condition
 
 # Perform DE testing:
 dds <- DESeq(dds)
-dds_LT07 <- DESeq(dds_LT07)
 
 # Output normalized counts:
 norm_counts <- counts (dds, normalized=TRUE)
-write.csv(norm_counts, file="results/DESeq2_ilrun_siRNA_all_normalized_counts.csv")
-
-norm_counts_LT07 <- counts (dds_LT07, normalized=TRUE)
-write.csv(norm_counts_LT07, file="results/DESeq2_ilrun_siRNA_all_normalized_counts_LT07.csv")
+write.csv(norm_counts, file="results/DESeq2_ilrun_siRNA_LT07_rev_all_normalized_counts.csv")
 
 
 # Convert results to dataframe:
-CoV2genesNEG6hr <- results(dds, contrast = c("Condition", "Uninfected_NEG_6hr", "Infected_NEG_6hr"))
-CoV2genesNEG24hr <- results(dds, contrast = c("Condition", "Uninfected_NEG_24hr", "Infected_NEG_24hr"))
-CoV2genesNEG6hr <- results(dds, contrast = c("Condition", "Uninfected_ILRUN_6hr", "Infected_ILRUN_6hr"))
-CoV2genesNEG24hr <- results(dds, contrast = c("Condition", "Uninfected_ILRUN_24hr", "Infected_ILRUN_24hr"))
-ILRUNgenesUninf6hr <- results(dds, contrast = c("Condition","Uninfected_NEG_6hr", "Uninfected_ILRUN_6hr"))
-ILRUNgenesUninf24hr <- results(dds, contrast = c("Condition","Uninfected_NEG_24hr", "Uninfected_ILRUN_24hr"))
-ILRUNgenesInf6hr <- results(dds, contrast = c("Condition","Infected_NEG_6hr", "Infected_ILRUN_6hr"))
-ILRUNgenesInf24hr <- results(dds, contrast = c("Condition","Infected_NEG_24hr", "Infected_ILRUN_24hr"))
+CoV2genesNEG6hr <- results(dds, contrast = c("Condition", "Infected_NEG_6hr", "Uninfected_NEG_6hr"))
+CoV2genesNEG24hr <- results(dds, contrast = c("Condition", "Infected_NEG_24hr", "Uninfected_NEG_24hr"))
+CoV2genesILRUN6hr <- results(dds, contrast = c("Condition", "Infected_ILRUN_6hr", "Uninfected_ILRUN_6hr"))
+CoV2genesILRUN24hr <- results(dds, contrast = c("Condition", "Infected_ILRUN_24hr", "Uninfected_ILRUN_24hr"))
 
+ILRUNgenesUninf6hr <- results(dds, contrast = c("Condition", "Uninfected_ILRUN_6hr","Uninfected_NEG_6hr"))
+ILRUNgenesUninf24hr <- results(dds, contrast = c("Condition", "Uninfected_ILRUN_24hr","Uninfected_NEG_24hr"))
+ILRUNgenesInf6hr <- results(dds, contrast = c("Condition", "Infected_ILRUN_6hr", "Infected_NEG_6hr"))
+ILRUNgenesInf24hr <- results(dds, contrast = c("Condition", "Infected_ILRUN_24hr", "Infected_NEG_24hr"))
 
-# Less LT07 Convert results to dataframe:
-CoV2genesNEG6hr_LT07 <- results(dds_LT07, contrast = c("Condition", "Uninfected_NEG_6hr", "Infected_NEG_6hr"))
-CoV2genesNEG24hr_LT07 <- results(dds_LT07, contrast = c("Condition", "Uninfected_NEG_24hr", "Infected_NEG_24hr"))
-CoV2genesILRUN6hr_LT07 <- results(dds_LT07, contrast = c("Condition", "Uninfected_ILRUN_6hr", "Infected_ILRUN_6hr"))
-CoV2genesILRUN24hr_LT07 <- results(dds_LT07, contrast = c("Condition", "Uninfected_ILRUN_24hr", "Infected_ILRUN_24hr"))
-ILRUNgenesUninf6hr_LT07 <- results(dds_LT07, contrast = c("Condition","Uninfected_NEG_6hr", "Uninfected_ILRUN_6hr"))
-ILRUNgenesUninf24hr_LT07 <- results(dds_LT07, contrast = c("Condition","Uninfected_NEG_24hr", "Uninfected_ILRUN_24hr"))
-ILRUNgenesInf6hr_LT07 <- results(dds_LT07, contrast = c("Condition","Infected_NEG_6hr", "Infected_ILRUN_6hr"))
-ILRUNgenesInf24hr_LT07 <- results(dds_LT07, contrast = c("Condition","Infected_NEG_24hr", "Infected_ILRUN_24hr"))
 
 # Set adjusted p-value significance (padj) threshold:
 alpha <- c( 0.05 )
 # Set log2FoldChange threshold:
 # As it's log2, > 1 is actually equal to 2-fold change or above.
-beta <- c( 1 )
+beta <- c( 0.75 )
 # Set baseMean threshold:
-gamma <- c( 10 )
+gamma <- c( 5 )
 
 ########################## CoV2genesNEG6hr #####################################################################
 # 'Which' provides positions of 'TRUE' values.
@@ -559,7 +552,7 @@ ggsave(filename = "results/PCA_lessLT07_LessLane.png", plot = text_plot_lessLT07
 write.csv(lessLT07_expression, file="results/DESeq2_ilrun_siRNA_lessLT07_expression.csv")
 
 
-genes_of_interest <- lessLT07_expression %>%
+genes_of_interest <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_000014_ISG15" | gene_locus == "XLOC_001047_IL6R" | gene_locus == "XLOC_001145_FCER1G" |
            gene_locus == "XLOC_021735_IFNAR1" | gene_locus == "XLOC_036412_ACE2")
   
@@ -568,7 +561,7 @@ plot_genes_of_interest <- ggplot(genes_of_interest, aes(x= Infection, y = expres
   geom_boxplot() +
   facet_wrap(~gene_locus)
 
-ISG15 <- lessLT07_expression %>%
+ISG15 <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_000014_ISG15") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -579,7 +572,7 @@ ISG15 <- lessLT07_expression %>%
          axis.text.x = element_text( size = 8 ),
          axis.title = element_text( size = 8))
 
-IL6R <- lessLT07_expression %>%
+IL6R <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_001047_IL6R") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -590,7 +583,7 @@ IL6R <- lessLT07_expression %>%
          axis.text.x = element_text( size = 8 ),
          axis.title = element_text( size = 8))
 
-FCER1G <- lessLT07_expression %>%
+FCER1G <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_001145_FCER1G") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -601,7 +594,7 @@ FCER1G <- lessLT07_expression %>%
          axis.text.x = element_text( size = 8 ),
          axis.title = element_text( size = 8))
 
-ACE2 <- lessLT07_expression %>%
+ACE2 <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_036412_ACE2") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -612,7 +605,9 @@ ACE2 <- lessLT07_expression %>%
          axis.text.x = element_text( size = 8 ),
          axis.title = element_text( size = 8))
 
-IFNAR1 <- lessLT07_expression %>%
+ggsave(filename = "results/ACE2.png", plot = ACE2, width = 10, height = 10, dpi = 300, units = "cm")
+
+IFNAR1 <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_021735_IFNAR1") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -623,7 +618,7 @@ IFNAR1 <- lessLT07_expression %>%
          axis.text.x = element_text( size = 8 ),
          axis.title = element_text( size = 8))
 
-VIM <- lessLT07_expression %>%
+VIM <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_003358_VIM") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -634,7 +629,9 @@ VIM <- lessLT07_expression %>%
          axis.text.x = element_text( size = 8 ),
          axis.title = element_text( size = 8))
 
-GBP1 <- lessLT07_expression %>%
+ggsave(filename = "results/VIM.png", plot = VIM, width = 10, height = 10, dpi = 300, units = "cm")
+
+GBP1 <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_002271_GBP1") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -646,7 +643,7 @@ GBP1 <- lessLT07_expression %>%
          axis.title = element_text( size = 8))
 
 
-FOLR2 <- lessLT07_expression %>%
+FOLR2 <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_005291_FOLR2") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -657,7 +654,7 @@ FOLR2 <- lessLT07_expression %>%
          axis.text.x = element_text( size = 8 ),
          axis.title = element_text( size = 8))
 
-IL15RA <- lessLT07_expression %>%
+IL15RA <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_004013_IL15RA") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -668,6 +665,54 @@ IL15RA <- lessLT07_expression %>%
          axis.text.x = element_text( size = 8 ),
          axis.title = element_text( size = 8))
 
+TLR7 <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
+  filter(gene_locus == "XLOC_035714_TLR7") %>% 
+  ggplot(aes(x= Infection, y = expression, color = siRNA)) +
+  geom_boxplot()+
+  facet_wrap(~timepoint)+
+  labs(title = "TLR7", 
+       x = "") +
+  theme( axis.text = element_text( size = 8 ),
+         axis.text.x = element_text( size = 8 ),
+         axis.title = element_text( size = 8))
+
+CXCR6 <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
+  filter(gene_locus == "XLOC_023206_CXCR6") %>% 
+  ggplot(aes(x= Infection, y = expression, color = siRNA)) +
+  geom_boxplot()+
+  facet_wrap(~timepoint)+
+  labs(title = "CXCR6", 
+       x = "") +
+  theme( axis.text = element_text( size = 8 ),
+         axis.text.x = element_text( size = 8 ),
+         axis.title = element_text( size = 8))
+
+HLA-DMA <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
+  filter(gene_locus == "XLOC_029226_HLA-DMA") %>% 
+  ggplot(aes(x= Infection, y = expression, color = siRNA)) +
+  geom_boxplot()+
+  facet_wrap(~timepoint)+
+  labs(title = "HLA-DMA", 
+       x = "") +
+  theme( axis.text = element_text( size = 8 ),
+         axis.text.x = element_text( size = 8 ),
+         axis.title = element_text( size = 8))
+
+ggsave(filename = "results/HLA-DMA.png", plot = HLA-DMA, width = 10, height = 10, dpi = 300, units = "cm")
+
+
+IL1B <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
+  filter(gene_locus == "XLOC_020145_IL1B") %>% 
+  ggplot(aes(x= Infection, y = expression, color = siRNA)) +
+  geom_boxplot()+
+  facet_wrap(~timepoint)+
+  labs(title = "IL1B", 
+       x = "") +
+  theme( axis.text = element_text( size = 8 ),
+         axis.text.x = element_text( size = 8 ),
+         axis.title = element_text( size = 8))
+
+ggsave(filename = "results/IL1B.png", plot = IL1B, width = 10, height = 10, dpi = 300, units = "cm")
 library(cowplot)
 
 # extract the legend from one of the plots
@@ -677,8 +722,8 @@ plot <- plot_grid(ISG15 + theme(legend.position="none"),
                   IL6R + theme(legend.position="none"),
                   FCER1G + theme(legend.position="none"),
                   ACE2 + theme(legend.position="none"),
-                  IFNAR1 + theme(legend.position="none"),
-                  VIM + theme(legend.position="none"), 
+                  TLR7 + theme(legend.position="none"),
+                  CXCR6 + theme(legend.position="none"), 
                   GBP1 +theme(legend.position="none"),
                   FOLR2 +theme(legend.position="none"),
                   IL15RA +theme(legend.position="none"))
@@ -687,9 +732,76 @@ genes_of_interest <- plot_grid(plot, legend, rel_widths = c(3, .3))
 
 ggsave(filename = "results/genes_of_interest.png", plot = genes_of_interest, width = 25, height = 20, dpi = 300, units = "cm")
 
+######################################## Renin Angiotensin pathway #############################################
+
+ACE2 <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
+  filter(gene_locus == "XLOC_036412_ACE2") %>% 
+  ggplot(aes(x= Infection, y = expression, color = siRNA)) +
+  geom_boxplot()+
+  facet_wrap(~timepoint)+
+  labs(title = "ACE2", 
+       x = "") +
+  theme( axis.text = element_text( size = 8 ),
+         axis.text.x = element_text( size = 8 ),
+         axis.title = element_text( size = 8))
+
+ggsave(filename = "results/ACE2.png", plot = ACE2, width = 10, height = 10, dpi = 300, units = "cm")
 
 
-FBL <- lessLT07_expression %>%
+ACE <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
+  filter(gene_locus == "XLOC_013801_ACE") %>% 
+  ggplot(aes(x= Infection, y = expression, color = siRNA)) +
+  geom_boxplot()+
+  facet_wrap(~timepoint)+
+  labs(title = "ACE", 
+       x = "") +
+  theme( axis.text = element_text( size = 8 ),
+         axis.text.x = element_text( size = 8 ),
+         axis.title = element_text( size = 8))
+
+ggsave(filename = "results/ACE.png", plot = ACE2, width = 10, height = 10, dpi = 300, units = "cm")
+
+
+AGT <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
+  filter(gene_locus == "XLOC_003165_AGT") %>% 
+  ggplot(aes(x= Infection, y = expression, color = siRNA)) +
+  geom_boxplot()+
+  facet_wrap(~timepoint)+
+  labs(title = "AGT", 
+       x = "") +
+  theme( axis.text = element_text( size = 8 ),
+         axis.text.x = element_text( size = 8 ),
+         axis.title = element_text( size = 8))
+
+ggsave(filename = "results/AGT.png", plot = AGT, width = 10, height = 10, dpi = 300, units = "cm")
+
+
+ENPEP <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
+  filter(gene_locus == "XLOC_025363_ENPEP") %>% 
+  ggplot(aes(x= Infection, y = expression, color = siRNA)) +
+  geom_boxplot()+
+  facet_wrap(~timepoint)+
+  labs(title = "ENPEP", 
+       x = "") +
+  theme( axis.text = element_text( size = 8 ),
+         axis.text.x = element_text( size = 8 ),
+         axis.title = element_text( size = 8))
+
+ggsave(filename = "results/ENPEP.png", plot = ENPEP, width = 10, height = 10, dpi = 300, units = "cm")
+
+plot_ACE2 <- plot_grid(ACE2 + theme(legend.position="none"),
+                  ACE + theme(legend.position="none"),
+                  ENPEP+ theme(legend.position="none"),
+                  AGT + theme(legend.position="none"))
+
+genes_of_angiotensin <- plot_grid(plot_ACE2, legend, rel_widths = c(3, .3))
+
+ggsave(filename = "results/genes_of_angiotensin.png", plot = genes_of_angiotensin, width = 25, height = 20, dpi = 300, units = "cm")
+
+#################################################################################################################
+
+
+FBL <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_017255_FBL") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -702,7 +814,7 @@ FBL <- lessLT07_expression %>%
 
 
 
-RPL13 <- lessLT07_expression %>%
+RPL13 <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_012366_RPL13") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -714,7 +826,7 @@ RPL13 <- lessLT07_expression %>%
          axis.title = element_text( size = 8))
 
 
-RPL7A <- lessLT07_expression %>%
+RPL7A <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_034787_RPL7A") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -726,7 +838,7 @@ RPL7A <- lessLT07_expression %>%
          axis.title = element_text( size = 8))
 
 
-RPL4 <- lessLT07_expression %>%
+RPL4 <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_011308_RPL4") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -737,7 +849,7 @@ RPL4 <- lessLT07_expression %>%
          axis.text.x = element_text( size = 8 ),
          axis.title = element_text( size = 8))
 
-RPL13A <- lessLT07_expression %>%
+RPL13A <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_016495_RPL13A") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -749,7 +861,7 @@ RPL13A <- lessLT07_expression %>%
          axis.title = element_text( size = 8))
 
 
-SNORD32A <- lessLT07_expression %>%
+SNORD32A <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_016496_SNORD32A") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -760,7 +872,7 @@ SNORD32A <- lessLT07_expression %>%
          axis.text.x = element_text( size = 8 ),
          axis.title = element_text( size = 8))
 
-SNORD34 <- lessLT07_expression %>%
+SNORD34 <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_016498_SNORD34") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -771,7 +883,7 @@ SNORD34 <- lessLT07_expression %>%
          axis.text.x = element_text( size = 8 ),
          axis.title = element_text( size = 8))
 
-SNORD35A <- lessLT07_expression %>%
+SNORD35A <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_016499_SNORD35A") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -782,7 +894,7 @@ SNORD35A <- lessLT07_expression %>%
          axis.text.x = element_text( size = 8 ),
          axis.title = element_text( size = 8))
 
-SNORD36A <- lessLT07_expression %>%
+SNORD36A <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv")%>%
   filter(gene_locus == "XLOC_034790_SNORD36A") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -793,7 +905,7 @@ SNORD36A <- lessLT07_expression %>%
          axis.text.x = element_text( size = 8 ),
          axis.title = element_text( size = 8))
 
-SNORD36C <- lessLT07_expression %>%
+SNORD36C <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_034791_SNORD36C") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -804,7 +916,7 @@ SNORD36C <- lessLT07_expression %>%
          axis.text.x = element_text( size = 8 ),
          axis.title = element_text( size = 8))
 
-SNORD38B <- lessLT07_expression %>%
+SNORD38B <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_000458_SNORD38B") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -815,7 +927,7 @@ SNORD38B <- lessLT07_expression %>%
          axis.text.x = element_text( size = 8 ),
          axis.title = element_text( size = 8))
 
-PDZD4 <- lessLT07_expression %>%
+PDZD4 <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_037006_PDZD4") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -826,7 +938,7 @@ PDZD4 <- lessLT07_expression %>%
          axis.text.x = element_text( size = 8 ),
          axis.title = element_text( size = 8))
 
-DPP4 <- lessLT07_expression %>%
+DPP4 <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_020331_DPP4") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -838,7 +950,7 @@ DPP4 <- lessLT07_expression %>%
          axis.title = element_text( size = 8))
 
 
-TRIM31 <- lessLT07_expression %>%
+TRIM31 <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_028190_TRIM31") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -849,11 +961,11 @@ TRIM31 <- lessLT07_expression %>%
          axis.text.x = element_text( size = 8 ),
          axis.title = element_text( size = 8))
 
-ggsave(filename = "results/TRIM31.png", plot = TRIM31, width = 25, height = 20, dpi = 300, units = "cm")
+ggsave(filename = "results/TRIM31.png", plot = TRIM31, width = 10, height = 10, dpi = 300, units = "cm")
 
 
 
-LGI4 <- lessLT07_expression %>%
+LGI4 <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_017175_LGI4") %>% 
   ggplot(aes(x= Infection, y = expression, color = siRNA)) +
   geom_boxplot()+
@@ -866,7 +978,7 @@ LGI4 <- lessLT07_expression %>%
 
 ggsave(filename = "results/LGI4.png", plot = LGI4, width = 25, height = 20, dpi = 300, units = "cm")
 
-PDZD4 <- lessLT07_expression %>%
+PDZD4 <- read.csv("results/DESeq2_ilrun_siRNA_lessLT07_expression.csv") %>%
   filter(gene_locus == "XLOC_037006_PDZD4") %>% 
   ggplot(aes(x= siRNA, y = expression)) +
   geom_boxplot()+
