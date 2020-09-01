@@ -73,8 +73,8 @@ ggsave(
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 5.5,
-  height = 5.5,
+  width = 6,
+  height = 6,
   units = "cm",
   dpi = 300,
   limitsize = TRUE,)
@@ -85,31 +85,56 @@ ggsave(
 
 ```{r Figure 1B polyI:C }
 
-sirna_valid <- read.csv("data/siRNA_validation.csv")
-
-###perform ANOVA ########
-siRNA_aov <- aov(Ct ~ siRNA, data = sirna_valid)
-summary(siRNA_aov)
-
-###Summarise for plotting bar graph #####
-siRNA_valid_stats <- sirna_valid %>% 
-  group_by(siRNA) %>% 
-  summarise(mean = mean(Ct), sd = sd(Ct)) %>% 
+polyIC <- read.csv("data/Caco2_polyIC.csv") %>% 
   mutate(upper = mean + sd) %>% 
   mutate(lower = mean - sd)
 
 #####order the x axis non-alphabetical##############
-siRNA_valid_stats$siRNA <- factor(siRNA_valid_stats$siRNA,levels =c("siNEG", "siILRUN"))
+polyIC$siRNA <- factor(polyIC$siRNA,levels =c("siNEG", "siILRUN"))
+polyIC$treatment <- factor(polyIC$treatment,levels =c("control", "polyIC"))
 
 ##### plot the data ################
-Figure1A <- ggplot(siRNA_valid_stats, aes(y= mean, x=siRNA))+
-  geom_bar(stat= "Identity", color= "black", fill = "grey", position = position_dodge()) +
+ IFNb <- polyIC %>% 
+  filter(target == "IFNb") %>% 
+  ggplot(aes(y= mean, x=siRNA, fill = treatment))+
+  geom_bar(stat= "Identity", color= "black", position = position_dodge()) +
   geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
-  geom_signif(comparisons=list(c("siNEG", "siILRUN")), annotations="***", y_position = 1.1, tip_length = 0, vjust=0.4) +
+  scale_fill_manual(values = c("#56B4E9", "#0072B2"))+
   theme_set(theme_classic(base_size = 8)) +
-  labs(tag = "B",
-       y ="Relative ILRUN mRNA",
+  theme(legend.key.size = unit(0.3, "cm")) +
+  labs(title = "IFNb",
+       y ="Relative mRNA",
        x = "")
+
+ TNFa <- polyIC %>% 
+  filter(target == "TNFa") %>% 
+  ggplot(aes(y= mean, x=siRNA, fill = treatment))+
+  geom_bar(stat= "Identity", color= "black", position = position_dodge()) +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
+  scale_fill_manual(values = c("#56B4E9", "#0072B2"))+
+  theme_set(theme_classic(base_size = 8)) +
+  labs(title = "TNFa",
+       y ="",
+       x = "")
+ 
+  IL6 <- polyIC %>% 
+  filter(target == "IL6") %>% 
+  ggplot(aes(y= mean, x=siRNA, fill = treatment))+
+  geom_bar(stat= "Identity", color= "black", position = position_dodge()) +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
+  scale_fill_manual(values = c("#56B4E9", "#0072B2"))+
+  theme_set(theme_classic(base_size = 8)) +
+  labs(title = "IL6",
+       y ="",
+       x = "")
+  
+legend <- get_legend(IFNb) 
+
+plot_cytokines <- plot_grid(IFNb + theme(legend.position="none"),
+                  TNFa + theme(legend.position="none"),
+                  IL6 + theme(legend.position="none"), nrow =1)
+
+Figure1B <- plot_grid(plot_cytokines, legend, rel_widths = c(3, .3))
   
 ggsave(
   filename = "results/Figure1B.TIFF",
@@ -117,8 +142,8 @@ ggsave(
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 5.5,
-  height = 5.5,
+  width = 12,
+  height = 6,
   units = "cm",
   dpi = 300,
   limitsize = TRUE,)
@@ -273,7 +298,6 @@ PCA_data_ILRUNgenesUninf_ <- ggplot(PCA_data_ILRUNgenesUninf_pca_genes, aes(x = 
   geom_point(aes(color = siRNA)) +
   geom_text(aes(label = timepoint), size = 4) + 
   theme_set(theme_classic(base_size = 10)) +
-  theme(legend.position = "none")+
   labs(tag = "A")
 
 
@@ -281,6 +305,7 @@ PCA_data_ILRUNgenesUninf_ <- ggplot(PCA_data_ILRUNgenesUninf_pca_genes, aes(x = 
 Figure2A <- ggplot(PCA_data_ILRUNgenesUninf_pca_genes, aes(x = PC1, y = PC2)) +
   geom_point(aes(fill = Condition),color = "black", pch = 21, size = 4)+
   theme_set(theme_classic(base_size = 10)) +
+  theme(legend.position = "none")+
   labs(tag = "A")
 
 ggsave(
@@ -294,11 +319,6 @@ ggsave(
   units = "cm",
   dpi = 300,
   limitsize = TRUE,)
-
-
-
-
-
 
 
 ```
@@ -356,16 +376,25 @@ ggsave(
 ```{r Figure2C. Enriched pathways }
 
 
+annotation_ILRUNgenesUninf24hr <- read.csv("data/ILRUNgenes_Uninf_24hrs_david_default_output.csv") %>% 
+  as_tibble() %>%
+  arrange(PValue) %>%
+  filter(Category == "BIOCARTA" | Category == "KEGG_PATHWAY") %>% 
+  filter(PValue < 0.05) %>% 
+  separate(Term, c("code", "Pathway"), sep = ":")
+
+write.csv(annotation_ILRUNgenesUninf24hr, "results/pathway_annotation_ILRUNgenesUninf24hr.csv")
+
 ###### Pathway enrichment  ##############
 Figure2C <- ggplot(annotation_ILRUNgenesUninf24hr) + 
-  geom_bar(aes(x = reorder(Pathway, log10P), y = Count, fill = log10P), stat = 'identity') +
+  geom_bar(aes(x = reorder(Pathway, -PValue), y = Fold_enrichment, fill = PValue), stat = 'identity') +
   coord_flip() +
-  scale_fill_viridis_c() +
+  scale_fill_viridis_c(direction = -1) +
   theme_set(theme_classic(base_size = 8)) +
-  theme(legend.key.size = unit(0.2, "cm")) +
-  labs(y = "Number of ILRUN genes involved",
+  theme(legend.key.size = unit(0.3, "cm")) +
+  labs(y = "Fold enrichment",
        x = "Pathway",
-       fill = "-log10(P)", 
+       fill = "PValue", 
        tag = "C")
   
   
@@ -379,24 +408,87 @@ ggsave(
   height = 8,
   units = "cm",
   dpi = 300,
-  limitsize = TRUE,)
+  limitsize = TRUE)
 
 
 
 ```
 
 
+```{r Figure 3A viral read counts}
 
+cpm_infected <- read.csv("results/coverview_ilrun_SARSCOV2_infected_cpm.csv")
+
+cpm_infected$timepoint <- factor(cpm_infected$timepoint,levels =c("6hr", "24hr"))
+cpm_infected$siRNA <- factor(cpm_infected$siRNA,levels =c("NEG", "ILRUN"))
+
+Figure3A <- ggplot(cpm_infected, aes(x = timepoint, y = cpm)) +
+  geom_boxplot(aes(fill = siRNA)) +
+  scale_y_log10() +
+  theme_set(theme_classic(base_size = 10)) +
+  theme(legend.key.size = unit(0.4, "cm")) +
+  labs(tag = "A",
+       x= "",
+       y = "Counts per million")
+
+
+ggsave(
+  filename = "results/Figure3A.TIFF",
+  plot = Figure3A,
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = 6 ,
+  height = 6,
+  units = "cm",
+  dpi = 300,
+  limitsize = TRUE)
+
+```
+
+
+```{r Figure 3B TCID50 vaidation of ILRUN proviral effect}
+
+
+
+ggsave(
+  filename = "results/Figure3B.TIFF",
+  plot = Figure3B,
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = 18 ,
+  height = 8,
+  units = "cm",
+  dpi = 300,
+  limitsize = TRUE,)
+
+
+```
 
 ```{r Figure 3C PCA for infection}
 
+infection_PCA <- read.csv("results/PCA_data_CoV2genesILRUN24hr_singleplate.csv")
 
-plot_CoV2genesILRUN24hr <- ggplot(PCA_data_CoV2genesILRUN24hr_pca_genes, aes(x = PC1, y = PC2)) +
-  geom_point(aes(color = Infection), size = 6)+
-  geom_text(aes(label = Name), size = 4) +
-  labs(title = "Principle Component Analysis CoV2genesILRUN24hr")
 
-ggsave(filename = "results/PCA_plot_CoV2genesILRUN24hr.png", plot = plot_CoV2genesILRUN24hr, width = 20, height = 20, dpi = 300, units = "cm")
+Figure3C <- ggplot(infection_PCA, aes(x = PC1, y = PC2)) +
+  geom_point(aes(fill = Condition),color = "black", pch = 21, size = 4)+
+  scale_fill_manual(values = c("#E7B800", "#FC4E07"))+
+  theme_set(theme_classic(base_size = 10)) +
+  theme(legend.position = "none")+
+  labs(tag = "C")
+
+ggsave(
+  filename = "results/Figure3C.TIFF",
+  plot = Figure3C,
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = 6,
+  height = 6,
+  units = "cm",
+  dpi = 300,
+  limitsize = TRUE,)
 
 
 
