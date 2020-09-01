@@ -364,6 +364,10 @@ CoV2genesILRUN24hr_metadata <- read_csv("data/ilrun_metadata_siRNA_LT07_rev.csv"
   filter(siRNA == "ILRUN") %>% 
   filter(timepoint == "24hr") %>% 
   filter(Lane == "L001") %>%
+  filter(Sample != "LT21_L001_rev.intersect") %>% 
+  filter(Sample != "LT22_L001_rev.intersect") %>% 
+  filter(Sample != "LT23_L001_rev.intersect") %>% 
+  filter(Sample != "LT24_L001_rev.intersect") %>% 
   mutate(Name = str_extract(Sample, "^...."))
 
 #join with the counts data 
@@ -389,6 +393,8 @@ PCA_data_CoV2genesILRUN24hr_pca_genes <- CoV2genesILRUN24hr_pca_genes$x %>%
   gather(PC, expression, -Sample) %>% 
   left_join(CoV2genesILRUN24hr_metadata, by = "Sample") %>%
   spread(PC, expression)
+
+write.csv(PCA_data_CoV2genesILRUN24hr_pca_genes, "results/PCA_data_CoV2genesILRUN24hr_singleplate.csv")
 
 plot_CoV2genesILRUN24hr <- ggplot(PCA_data_CoV2genesILRUN24hr_pca_genes, aes(x = PC1, y = PC2)) +
   geom_point(aes(color = Infection), size = 6)+
@@ -918,6 +924,30 @@ plot_ILRUNgenesUninf24hr_pathways <- ggplot(annotation_ILRUNgenesUninf24hr) +
 
 ggsave(filename = "results/pathway_plot_ILRUNgenesUninf24hr.png", plot = plot_ILRUNgenesUninf24hr_pathways, width = 30, height = 20, dpi = 300, units = "cm")
 
+############### Gene lists from Wei et al.#############
+
+proviral <- read.csv("data/CRISPR_proviral_gene_list.csv") %>%
+  as_tibble() %>% 
+  unique()
+
+sigILRUNgenesUninf24hr_Pvalue<- ILRUNgenesUninf24hr[ which( ILRUNgenesUninf24hr$padj < alpha), ]
+
+ILRUN_DE_Uninf24hr_Pvalue <- sigILRUNgenesUninf24hr_Pvalue %>% 
+  as.data.frame() %>% 
+  rownames_to_column() %>%
+  separate(rowname, c("gene", "gene1"), sep = "_") %>% 
+  select(-gene1) 
+
+write.csv(ILRUN_DE_Uninf24hr_Pvalue, "results/ILRUN_DE_Uninf24hr_Pvalue.csv")
+
+list_for_Cam <- proviral %>% 
+  inner_join(ILRUN_DE_Uninf24hr_Pvalue, by = "gene") %>% 
+  arrange(pvalue) %>% 
+  filter(log2FoldChange >0) %>% 
+  filter(log2FoldChange >0.5)
+
+write.csv(list_for_Cam, "results/ILRUN_DEgenes_in_VEROE6_CRISPRscreen.csv")
+
 ########################## ILRUNgenesInf6hr ###################################################################### 
 ##'Which' provides positions of 'TRUE' values.
 sigILRUNgenesInf6hr<- ILRUNgenesInf6hr[ which( ILRUNgenesInf6hr$padj < alpha), ]
@@ -1086,6 +1116,30 @@ volcano_plot_ILRUNgenesInf24hr <- EnhancedVolcano(forplotting_ILRUNgenesInf24hr,
                                                  labSize = 3.0)
 
 ggsave(filename = "results/volcano_plot_ILRUNgenesInf24hr.png", plot = volcano_plot_ILRUNgenesInf24hr, width = 20, height = 20, dpi = 300, units = "cm")
+###########################Proviral effect genes ILRUN 24hrs  #################################
+proviral <- read.csv("data/CRISPR_proviral_gene_list.csv") %>%
+  as_tibble() %>% 
+  unique()
+
+sigILRUNgenesInf24hr_Pvalue<- ILRUNgenesInf24hr[ which( ILRUNgenesInf24hr$padj < alpha), ]
+
+ILRUN_DE_Inf24hr_Pvalue <- sigILRUNgenesInf24hr_Pvalue %>% 
+  as.data.frame() %>% 
+  rownames_to_column() %>%
+  separate(rowname, c("gene", "gene1"), sep = "_") %>% 
+  select(-gene1) 
+
+write.csv(ILRUN_DE_Inf24hr_Pvalue, "results/ILRUN_DE_Inf24hr_Pvalue.csv")
+
+list_for_Cam_inf <- proviral %>% 
+  inner_join(ILRUN_DE_Inf24hr_Pvalue, by = "gene") %>% 
+  arrange(pvalue) %>% 
+  filter(log2FoldChange >0) %>% 
+  filter(log2FoldChange >0.5)
+
+write.csv(list_for_Cam_inf, "results/ILRUN_DEgenes_in_VEROE6_CRISPRscreen_infected.csv")
+
+
 
 ############################################### Specific genes #######################################################################################
 metadata_rev_LT07 <- read_csv("data/ilrun_metadata_siRNA_LT07_rev.csv")

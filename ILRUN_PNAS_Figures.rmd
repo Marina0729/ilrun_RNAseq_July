@@ -73,7 +73,7 @@ ggsave(
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 6,
+  width = 4,
   height = 6,
   units = "cm",
   dpi = 300,
@@ -142,7 +142,7 @@ ggsave(
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 12,
+  width = 14,
   height = 6,
   units = "cm",
   dpi = 300,
@@ -181,8 +181,8 @@ ggsave(
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 5.5,
-  height = 5.5,
+  width = 6,
+  height = 6,
   units = "cm",
   dpi = 300,
   limitsize = TRUE)
@@ -217,8 +217,8 @@ ggsave(
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 5.5,
-  height = 5.5,
+  width = 6,
+  height = 6,
   units = "cm",
   dpi = 300,
   limitsize = TRUE)
@@ -255,8 +255,8 @@ ggsave(
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 5.5,
-  height = 5.5,
+  width = 6,
+  height = 6,
   units = "cm",
   dpi = 300,
   limitsize = TRUE)
@@ -373,42 +373,101 @@ ggsave(
 
 ```
 
-```{r Figure2C. Enriched pathways }
+```{r validation of IL6R, VIM and ISG15}
+
+```
 
 
-annotation_ILRUNgenesUninf24hr <- read.csv("data/ILRUNgenes_Uninf_24hrs_david_default_output.csv") %>% 
+```{r Figure3A. Enriched pathways }
+
+
+pathway_ILRUNgenesUninf24hr <- read.csv("data/ILRUNgenes_Uninf_24hrs_david_default_output.csv") %>% 
   as_tibble() %>%
   arrange(PValue) %>%
   filter(Category == "BIOCARTA" | Category == "KEGG_PATHWAY") %>% 
   filter(PValue < 0.05) %>% 
   separate(Term, c("code", "Pathway"), sep = ":")
 
-write.csv(annotation_ILRUNgenesUninf24hr, "results/pathway_annotation_ILRUNgenesUninf24hr.csv")
+gene_ontology_ILRUNgenesUninf24hr <- read.csv("data/ILRUNgenes_Uninf_24hrs_david_default_output.csv") %>% 
+  as_tibble() %>%
+  arrange(PValue) %>%
+  filter(Category == "GOTERM_CC_DIRECT"| Category == "GOTERM_BP_DIRECT") %>% 
+  filter(PValue < 0.05) %>% 
+  separate(Term, c("code", "Pathway"), sep = ":")
+
+write.csv(pathway_ILRUNgenesUninf24hr , "results/pathway_annotation_ILRUNgenesUninf24hr.csv")
 
 ###### Pathway enrichment  ##############
-Figure2C <- ggplot(annotation_ILRUNgenesUninf24hr) + 
+Figure3A <- ggplot(pathway_ILRUNgenesUninf24hr) + 
   geom_bar(aes(x = reorder(Pathway, -PValue), y = Fold_enrichment, fill = PValue), stat = 'identity') +
   coord_flip() +
   scale_fill_viridis_c(direction = -1) +
-  theme_set(theme_classic(base_size = 8)) +
+  theme_set(theme_classic(base_size = 6)) +
   theme(legend.key.size = unit(0.3, "cm")) +
   labs(y = "Fold enrichment",
-       x = "Pathway",
+       x = "KEGG or BIOCARTA Pathway",
        fill = "PValue", 
-       tag = "C")
+       tag = "A")
   
   
 ggsave(
-  filename = "results/Figure2C.TIFF",
-  plot = Figure2C,
+  filename = "results/Figure3A.TIFF",
+  plot = Figure3A,
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 18 ,
+  width = 9 ,
   height = 8,
   units = "cm",
   dpi = 300,
   limitsize = TRUE)
+
+
+
+```
+
+```{r Figure3B. Enriched GO terms }
+
+
+gene_ontology_ILRUNgenesUninf24hr <- read.csv("data/ILRUNgenes_Uninf_24hrs_david_default_output.csv") %>% 
+  as_tibble() %>%
+  arrange(PValue) %>%
+  filter(Category == "GOTERM_CC_DIRECT"| Category == "GOTERM_BP_DIRECT") %>% 
+  filter(PValue < 0.05) %>% 
+  separate(Term, c("code", "Pathway"), sep = ":") %>%
+  mutate(GOterm = str_remove(Pathway, "^.*\\~")) %>% 
+  filter(GOterm != "negative regulation of extrinsic apoptotic signaling pathway via death domain receptors")
+
+  
+
+write.csv(gene_ontology_ILRUNgenesUninf24hr , "results/gene_ontology_annotation_ILRUNgenesUninf24hr.csv")
+
+###### Pathway enrichment  ##############
+Figure3B <- ggplot(gene_ontology_ILRUNgenesUninf24hr) + 
+  geom_bar(aes(x = reorder(GOterm, -PValue), y = Fold_enrichment, fill = PValue), stat = 'identity') +
+  coord_flip() +
+  scale_fill_viridis_c(direction = -1) +
+  theme_set(theme_classic(base_size = 6)) +
+  theme(legend.key.size = unit(0.3, "cm")) +
+  labs(y = "Fold enrichment",
+       x = "GO Term",
+       fill = "PValue", 
+       tag = "B")
+  
+  
+ggsave(
+  filename = "results/Figure3B.TIFF",
+  plot = Figure3B,
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = 9,
+  height = 8,
+  units = "cm",
+  dpi = 300,
+  limitsize = TRUE)
+
+
 
 
 
