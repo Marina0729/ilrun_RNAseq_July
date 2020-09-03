@@ -314,8 +314,8 @@ ggsave(
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 7,
-  height = 7,
+  width = 6,
+  height = 8,
   units = "cm",
   dpi = 300,
   limitsize = TRUE,)
@@ -334,7 +334,7 @@ p1 <- EnhancedVolcano(forplotting_ILRUNgenesUninf24hr,
                                                    selectLab = c(immune_genes_Uninf24hr$gene),
                                                    xlim = c(-3, 3),
                                                    pCutoff = 0.05,
-                                                   FCcutoff = 0.75,
+                                                   FCcutoff = 1,
                                                    pointSize = 1.0,
                                                    labSize = 2.0,
                                                    labCol = 'black',
@@ -364,7 +364,7 @@ ggsave(
   path = NULL,
   scale = 1,
   width = 11 ,
-  height = 7,
+  height = 8,
   units = "cm",
   dpi = 300,
   limitsize = TRUE,)
@@ -406,8 +406,7 @@ Figure3A <- ggplot(pathway_ILRUNgenesUninf24hr) +
   theme(legend.key.size = unit(0.3, "cm")) +
   labs(y = "Fold enrichment",
        x = "KEGG or BIOCARTA Pathway",
-       fill = "PValue", 
-       tag = "A")
+       fill = "PValue")
   
   
 ggsave(
@@ -481,24 +480,26 @@ cpm_infected <- read.csv("results/coverview_ilrun_SARSCOV2_infected_cpm.csv")
 cpm_infected$timepoint <- factor(cpm_infected$timepoint,levels =c("6hr", "24hr"))
 cpm_infected$siRNA <- factor(cpm_infected$siRNA,levels =c("NEG", "ILRUN"))
 
-Figure3A <- ggplot(cpm_infected, aes(x = timepoint, y = cpm)) +
+Figure4A <- ggplot(cpm_infected, aes(x = timepoint, y = cpm)) +
   geom_boxplot(aes(fill = siRNA)) +
   scale_y_log10() +
-  theme_set(theme_classic(base_size = 10)) +
-  theme(legend.key.size = unit(0.4, "cm")) +
+  ylim(0, 2500)+
+  theme_set(theme_classic(base_size = 8)) +
+  scale_fill_manual(values = c("#F0E442", "#D55E00"))+
+  theme(legend.key.size = unit(0.3, "cm")) +
   labs(tag = "A",
        x= "",
-       y = "Counts per million")
+       y = "Viral RNA (counts per million")
 
 
 ggsave(
-  filename = "results/Figure3A.TIFF",
-  plot = Figure3A,
+  filename = "results/Figure4A.TIFF",
+  plot = Figure4A,
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 6 ,
-  height = 6,
+  width = 10,
+  height = 5.5,
   units = "cm",
   dpi = 300,
   limitsize = TRUE)
@@ -510,22 +511,45 @@ ggsave(
 
 
 
+ILRUN_titres <- read.csv("data/siILRUN_SARSCOV2.csv") %>%
+    mutate(treatment = factor(treatment, levels = c("siNEG", "siILRUN", "pCAGGS-GFP", "pCAGGs-ILRUN-FLAG")))
+
+
+###Summarise for plotting bar graph #####
+ILRUN_titres_stats <- ILRUN_titres %>% 
+  group_by(treatment) %>% 
+  summarise(mean = mean(TCID50), sd = sd(TCID50)) %>% 
+  mutate(upper = mean + sd) %>% 
+  mutate(lower = mean - sd) %>%
+  mutate(treatment = factor(treatment, levels = c("siNEG", "siILRUN", "pCAGGS-GFP", "pCAGGs-ILRUN-FLAG")))
+
+##### plot the data ################
+Figure3B <- ggplot(ILRUN_titres, aes(y= TCID50, x= treatment))+
+  geom_boxplot()+
+  geom_jitter(width = 0.1)+
+  ylim(0, 10000)+
+  theme_set(theme_classic(base_size = 8)) +
+  labs(x = "",
+       y = "Log10 TCID50 per ml",
+       tag = "B")
+  
 ggsave(
   filename = "results/Figure3B.TIFF",
   plot = Figure3B,
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 18 ,
-  height = 8,
+  width = 11,
+  height = 5.5,
   units = "cm",
   dpi = 300,
-  limitsize = TRUE,)
+  limitsize = TRUE)
+
 
 
 ```
 
-```{r Figure 3C PCA for infection}
+```{r Figure 4? PCA for infection}
 
 infection_PCA <- read.csv("results/PCA_data_CoV2genesILRUN24hr_singleplate.csv")
 
@@ -554,23 +578,31 @@ ggsave(
 
 ```
 
-```{r Figure 4A Known hots genes for SARSCOV2}
+```{r Figure 4C Known hots genes for SARSCOV2}
+
 
 ACE2 <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
   filter(gene == "ACE2")%>%
   filter(timepoint == "24hr") %>% 
-  ggplot(aes(x= Infection, y = expression, color = siRNA)) +
-  geom_boxplot()+
+  mutate(siRNA = factor(siRNA, levels = c("NEG", "ILRUN"))) %>% 
+  mutate(Infection = factor(Infection, levels = c("Uninfected", "Infected"))) %>% 
+  ggplot(aes(x= Infection, y = expression)) +
+  geom_boxplot(aes(fill = siRNA)) +
+  scale_fill_manual(values = c("#F0E442", "#D55E00"))+
   labs(x = "",
        y = "normalized counts",
        title = "ACE2")+
+  theme(legend.key.size = unit(0.2, "cm")) +
   theme_set(theme_classic(base_size = 8))
 
 TMPRSS2 <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
   filter(gene == "TMPRSS2")%>%
-  filter(timepoint == "24hr") %>% 
-  ggplot(aes(x= Infection, y = expression, color = siRNA)) +
-  geom_boxplot()+
+  filter(timepoint == "24hr") %>%
+  mutate(siRNA = factor(siRNA, levels = c("NEG", "ILRUN"))) %>%
+  mutate(Infection = factor(Infection, levels = c("Uninfected", "Infected"))) %>% 
+  ggplot(aes(x= Infection, y = expression)) +
+  geom_boxplot(aes(fill = siRNA)) +
+  scale_fill_manual(values = c("#F0E442", "#D55E00"))+
   labs(x = "",
        y = "normalized counts",
        title ="TMPRSS2")+
@@ -579,8 +611,11 @@ TMPRSS2 <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
 FURIN <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
   filter(gene == "FURIN")%>%
   filter(timepoint == "24hr") %>% 
-  ggplot(aes(x= Infection, y = expression, color = siRNA)) +
-  geom_boxplot()+
+  mutate(siRNA = factor(siRNA, levels = c("NEG", "ILRUN"))) %>%
+  mutate(Infection = factor(Infection, levels = c("Uninfected", "Infected"))) %>% 
+  ggplot(aes(x= Infection, y = expression)) +
+  geom_boxplot(aes(fill = siRNA)) +
+  scale_fill_manual(values = c("#F0E442", "#D55E00"))+
   labs(x = "",
        y = "normalized counts",
        title ="FURIN")+
@@ -589,8 +624,11 @@ FURIN <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
 CTSL <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
   filter(gene == "CTSL")%>%
   filter(timepoint == "24hr") %>% 
-  ggplot(aes(x= Infection, y = expression, color = siRNA)) +
-  geom_boxplot()+
+  mutate(siRNA = factor(siRNA, levels = c("NEG", "ILRUN"))) %>%
+  mutate(Infection = factor(Infection, levels = c("Uninfected", "Infected"))) %>% 
+  ggplot(aes(x= Infection, y = expression)) +
+  geom_boxplot(aes(fill = siRNA)) +
+  scale_fill_manual(values = c("#F0E442", "#D55E00"))+
   labs(x = "",
        y = "normalized counts",
        title ="CTSL")+
@@ -598,9 +636,12 @@ CTSL <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
 
 CTSB <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
   filter(gene == "CTSB")%>%
-  filter(timepoint == "24hr") %>% 
-  ggplot(aes(x= Infection, y = expression, color = siRNA)) +
-  geom_boxplot()+
+  filter(timepoint == "24hr") %>%
+  mutate(siRNA = factor(siRNA, levels = c("NEG", "ILRUN"))) %>%
+  mutate(Infection = factor(Infection, levels = c("Uninfected", "Infected"))) %>% 
+  ggplot(aes(x= Infection, y = expression)) +
+  geom_boxplot(aes(fill = siRNA)) +
+  scale_fill_manual(values = c("#F0E442", "#D55E00"))+
   labs(x = "",
        y = "normalized counts",
        title ="CTSB")+
@@ -609,28 +650,94 @@ CTSB <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
 
 legend <- get_legend(ACE2) 
 
-plot <- plot_grid(ACE2 + theme(legend.position="none"),
+plot_4C <- plot_grid(ACE2 + theme(legend.position="none"),
                   TMPRSS2 + theme(legend.position="none"),
-                  CTSL + theme(legend.position="none"),
-                  CTSB + theme(legend.position = "none"))
+                  CTSL + theme(legend.position="none"), nrow = 1)
 
-Figure4A <- plot_grid(plot, legend, rel_widths = c(3, .5))
-knownSARSCOV2hostgenes <- plot_grid(plot, legend, rel_widths = c(3, .5))
+Figure4C <- plot_grid(plot_4C, legend, rel_widths = c(3, .4))
 
 ggsave(
-  filename = "results/Figure4A.TIFF",
-  plot = Figure4A,
+  filename = "results/Figure4C.TIFF",
+  plot = Figure4C,
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 11 ,
-  height = 11,
+  width = 12 ,
+  height = 5.5,
+  units = "cm",
+  dpi = 300,
+  limitsize = TRUE,)
+```
+
+
+```{r  Figure4F ILRUN and ACE2 expression is anti-correllated in TH2-stimulated primary bronchial epithelial cells}
+
+Th2_cytokines <- read.csv("results/GSE113185_Th2.csv")
+
+
+ILRUN_NHBE_data <- Th2_cytokines %>% 
+  filter(transcript == "ilrun") %>%
+  mutate(stimulation = factor(stimulation, levels = c("control", "IL-4 + IL-13")))
+
+ACE2_NHBE_data <- Th2_cytokines %>% 
+  filter(transcript == "ACE2") %>%
+  mutate(stimulation = factor(stimulation, levels = c("control", "IL-4 + IL-13")))
+
+AGT_NHBE_data <- Th2_cytokines %>% 
+  filter(transcript == "AGT") %>%
+  mutate(stimulation = factor(stimulation, levels = c("control", "IL-4 + IL-13")))
+
+
+
+ILRUN_NHBE <- ggplot(ILRUN_NHBE_data, aes( x= stimulation, y = expn)) +
+  geom_boxplot(aes(fill = stimulation)) +
+  scale_fill_manual(values = c("#999999", "#009E73"))+
+  labs(title = "ILRUN", 
+       x = "",
+       y = "normalized counts")+
+  theme(legend.key.size = unit(0.2, "cm")) +
+  theme_set(theme_classic(base_size = 8))
+
+
+ACE2_NHBE <- ggplot(ACE2_NHBE_data, aes( x= stimulation, y = expn)) +
+  geom_boxplot(aes(fill = stimulation)) +
+  scale_fill_manual(values = c("#999999", "#009E73"))+
+  labs(title = "ACE2", 
+       x = "",
+       y = "normalized counts")+
+  theme_set(theme_classic(base_size = 8))
+
+AGT_NHBE <- ggplot(AGT_NHBE_data, aes( x= stimulation, y = expn)) +
+  geom_boxplot(aes(fill = stimulation)) +
+  scale_fill_manual(values = c("#999999", "#009E73"))+
+  labs(title = "AGT", 
+       x = "",
+       y = "normalized counts")+
+  theme_set(theme_classic(base_size = 8))
+
+
+legend_NHBE <- get_legend(ILRUN_NHBE) 
+
+plot_4F <- plot_grid(ILRUN_NHBE + theme(legend.position="none"),
+                  ACE2_NHBE + theme(legend.position="none"),
+                  AGT_NHBE + theme(legend.position="none"), nrow = 1)
+
+
+Figure4F <- plot_grid(plot_4F, legend_NHBE, rel_widths = c(3, .6))
+
+ggsave(
+  filename = "results/Figure4F.TIFF",
+  plot = Figure4F,
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = 12,
+  height = 5.5,
   units = "cm",
   dpi = 300,
   limitsize = TRUE,)
 
-ggsave(filename = "results/knownSARSCOV2hostgenes_CTSB.png", plot = knownSARSCOV2hostgenes, width = 15, height = 12, dpi = 300, units = "cm")
-
 
 
 ```
+

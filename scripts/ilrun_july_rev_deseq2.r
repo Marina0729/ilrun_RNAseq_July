@@ -854,7 +854,8 @@ tibble_ILRUNgenesUninf24hr_name <- ILRUNgenesUninf24hr %>%
   as.data.frame() %>% 
   rownames_to_column() %>% 
   separate(rowname, c("gene", "gene1"), sep = "_") %>% 
-  select(-gene1) 
+  select(-gene1) %>% 
+  arrange(padj)
 
 KEGG_immune_system_genes_Uninf24hr <- KEGG_immune_system %>%
   left_join(tibble_ILRUNgenesUninf24hr_name , by = "gene") %>%
@@ -867,12 +868,12 @@ write.csv(KEGG_immune_system_genes_Uninf24hr, "results/KEGG_immune_system_genes_
 immune_genes_Uninf24hr <- c('ISG15','IL6R','TLR7', 'STAT4', 'SOCS2','IL1B','IL15RA', 'AKT1', 'CD14', 'TLR2', 'IFIH1', 'OAS1',
                            'JAK1', 'JAK2', 'CDK2', 'NFKB1', 'IL12A', 'IL8', 'TAP1', 'HLA-B', 'HLA-DMA', 'TRAIL', 'IL2RG', 'IL1R',
                            'TGFB1', 'CCR1', 'CCR6', 'IL8', 'IFIT3', 'IL18', 'IFIT3', 'CXCR7', 'GDF11', 'LIFR', 'MMP14', 'THBS1', 'VAV3', 'PRKCQ',
-                           'IkBKA', 'ILRUN', 'VIM', 'FCGR2', "P300") %>%
+                           'IkBKA', 'ILRUN', 'VIM', 'FCGR2', "P300", "FCGRT", "LAMC1", "TGB1","LAMC1", "SLC1A3", "NFE2L3", "ELOVL5",  "DPYSL3" ) %>%
   as_tibble() %>% 
   rename(gene = value) %>% 
   left_join(tibble_ILRUNgenesUninf24hr , by = "gene") %>% 
   filter(padj <0.05 ) %>% 
-  filter(log2FoldChange >0.75 | log2FoldChange < -0.75) 
+  filter(log2FoldChange >1 | log2FoldChange < -1) 
 
 
 #########################################
