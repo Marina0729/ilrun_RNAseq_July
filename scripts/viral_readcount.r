@@ -21,19 +21,33 @@ list_of_coverview_summary_files <- list.files(path = ".", recursive = TRUE,
                             full.names = TRUE)
 
 ####total read counts for normalisation
-
-
 total_counts <- read.csv("results/total_counts.csv") %>% 
   as_tibble() %>%
   filter(Sample != "LT41") %>% 
-  filter(Sample != "LT42") %>% 
+  filter(Sample != "LT42") %>%
+  filter(Sample != "LT21") %>% 
+  filter(Sample != "LT22") %>% 
+  filter(Sample != "LT23") %>%
+  filter(Sample != "LT24") %>%
+  filter(Sample != "LT22") %>% 
+  filter(Sample != "LT23") %>%
+  filter(Sample != "LT24") %>%
   select(Reads)
 
+#read in the rRNA data
 counts_18S <- read.csv("results/counts_18s.csv")
 
 #read in the metadata
 metadata_viral_readcount <- read.csv("data/ilrun_metadata_siRNA.csv") %>% 
-  rename(Sample_Lane = Sample)
+  rename(Sample_Lane = Sample) %>% 
+  filter(Sample_Lane !="LT21_L001") %>%
+  filter(Sample_Lane !="LT21_L002") %>%
+  filter(Sample_Lane !="LT22_L001") %>%
+  filter(Sample_Lane !="LT22_L002") %>%
+  filter(Sample_Lane !="LT23_L001") %>%
+  filter(Sample_Lane !="LT23_L002") %>%
+  filter(Sample_Lane !="LT24_L001") %>%
+  filter(Sample_Lane !="LT24_L002") 
 
 
 ###Put them into a dataframe using vroom
@@ -59,7 +73,9 @@ ggsave(filename = "results/viral_reads_ilrun_july.png", plot = viral_reads_ilrun
 #want to just plot the infected samples
 
 coverview_ilrun_SARSCOV2_infected <- coverview_ilrun_SARSCOV2 %>% 
-  filter(RC > 1000 )
+  filter(Infection == "Infected " )
+
+write.csv(coverview_ilrun_SARSCOV2_infected, "results/coverview_ilrun_SARSCOV2_infected_cpm.csv")
 
 viral_reads_ilrun_infected <- ggplot(coverview_ilrun_SARSCOV2_infected, aes(x = timepoint, y = cpm, color = siRNA)) +
   geom_boxplot()+
