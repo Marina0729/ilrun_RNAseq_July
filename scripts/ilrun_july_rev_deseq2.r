@@ -92,7 +92,7 @@ ILRUNgenesInf24hr <- results(dds, contrast = c("Condition", "Infected_ILRUN_24hr
 alpha <- c( 0.05 )
 # Set log2FoldChange threshold:
 # As it's log2, > 1 is actually equal to 2-fold change or above.
-beta <- c( 0.75 )
+beta <- c( 1 )
 # Set baseMean threshold:
 gamma <- c( 5 )
 
@@ -772,7 +772,9 @@ sigILRUNgenesUninf24hr <- sigILRUNgenesUninf24hr[ which(sigILRUNgenesUninf24hr$b
 write.csv(sigILRUNgenesUninf24hr, file="results/sigILRUNgenesUninf24hr_LT07_rev.csv")
 # Slices out rows above an average count of 10 reads (anything below is rubbish).
 ILRUNgenesUninf24hr_hits <- rownames(sigILRUNgenesUninf24hr)
+
 length(ILRUNgenesUninf24hr_hits)
+
 write.csv(norm_counts[ILRUNgenesUninf24hr_hits, ], file="results/DESeq2_sig_ILRUNgenesUninf24hr_LT07_rev_normalized_counts.csv")
 
 david <- read_csv("results/sigILRUNgenesUninf24hr_LT07_rev.csv") %>% 
@@ -780,8 +782,9 @@ david <- read_csv("results/sigILRUNgenesUninf24hr_LT07_rev.csv") %>%
   rename(gene = X1) %>% 
   separate(gene, c("gene", "gene1")) %>% 
   select(gene) %>% 
-  filter(str_detect(gene, "LOC") == FALSE) %>% 
-  write.csv("results/ILRUNgenesUninf24hr_LT07_rev_david.csv")
+  filter(str_detect(gene, "LOC") == FALSE)
+
+write.csv(david, "results/ILRUNgenesUninf24hr_LT07_rev_david.csv")
 
 #making a PCA  
 #read in the metadata
