@@ -438,12 +438,14 @@ write.csv(sigILRUNgenesUninf6hr, file="results/sigILRUNgenesUninf6hr_LT07_rev.cs
 ILRUNgenesUninf6hr_hits <- rownames(sigILRUNgenesUninf6hr)
 length(ILRUNgenesUninf6hr_hits)
 write.csv(norm_counts[ILRUNgenesUninf6hr_hits, ], file="results/DESeq2_sig_ILRUNgenesUninf6hr_LT07_rev_normalized_counts.csv")
-read_csv("results/sigILRUNgenesUninf6hr_LT07_rev.csv") %>% 
-  select("X1") %>% 
+
+sigILRUNgenesUninf6hr_LT07_rev_david <- read_csv("results/sigILRUNgenesUninf6hr_LT07_rev.csv") %>% 
+  select(X1) %>% 
   rename(gene = X1) %>% 
   separate(gene, c("gene", "gene1")) %>% 
-  select(gene) %>% 
-  write.csv("results/ILRUNgenesUninf6hr_LT07_rev_david.csv")
+  select(gene)
+
+write.csv(sigILRUNgenesUninf6hr_LT07_rev, "results/ILRUNgenesUninf6hr_LT07_rev_david.csv")
 
 ######################## making a PCA ##########################################
 #read in the metadata

@@ -85,6 +85,31 @@ ggsave(
 
 ```{r Figure 1B polyI:C }
 
+##### performing ANOVA on experimental groups ################
+
+polyIC_reps_IFNb <- read.csv("data/Caco2_polyIC_reps.csv") %>%
+  filter(treatment == "polyIC") %>% 
+  filter(target == "IFNb")
+
+polyIC_reps_TNFa <- read.csv("data/Caco2_polyIC_reps.csv") %>%
+  filter(treatment == "polyIC") %>% 
+  filter(target == "TNFa")
+
+polyIC_reps_IL6 <- read.csv("data/Caco2_polyIC_reps.csv") %>%
+  filter(treatment == "polyIC") %>% 
+  filter(target == "IL6")
+
+polyIC_aov_IFNb <- aov(relative_mRNA ~ siRNA, data = polyIC_reps_IFNb)
+summary(polyIC_aov_IFNb)
+
+polyIC_aov_TNFa <- aov(relative_mRNA ~ siRNA, data = polyIC_reps_TNFa)
+summary(polyIC_aov_TNFa)
+
+polyIC_aov_IL6 <- aov(relative_mRNA ~ siRNA, data = polyIC_reps_IL6)
+summary(polyIC_aov_IL6)
+
+
+##### data of means  ################
 polyIC <- read.csv("data/Caco2_polyIC.csv") %>% 
   mutate(upper = mean + sd) %>% 
   mutate(lower = mean - sd)
@@ -99,6 +124,7 @@ polyIC$treatment <- factor(polyIC$treatment,levels =c("control", "polyIC"))
   ggplot(aes(y= mean, x=siRNA, fill = treatment))+
   geom_bar(stat= "Identity", color= "black", position = position_dodge()) +
   geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
+  geom_signif(comparisons=list(c("siNEG", "siILRUN")), annotations="***", y_position = 1400, tip_length = 0, vjust=0.4) +
   scale_fill_manual(values = c("#56B4E9", "#0072B2"))+
   theme_set(theme_classic(base_size = 8)) +
   theme(legend.key.size = unit(0.3, "cm")) +
@@ -111,6 +137,7 @@ polyIC$treatment <- factor(polyIC$treatment,levels =c("control", "polyIC"))
   ggplot(aes(y= mean, x=siRNA, fill = treatment))+
   geom_bar(stat= "Identity", color= "black", position = position_dodge()) +
   geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
+   geom_signif(comparisons=list(c("siNEG", "siILRUN")), annotations="**", y_position = 35, tip_length = 0, vjust=0.4) +
   scale_fill_manual(values = c("#56B4E9", "#0072B2"))+
   theme_set(theme_classic(base_size = 8)) +
   labs(title = "TNFa",
@@ -122,6 +149,7 @@ polyIC$treatment <- factor(polyIC$treatment,levels =c("control", "polyIC"))
   ggplot(aes(y= mean, x=siRNA, fill = treatment))+
   geom_bar(stat= "Identity", color= "black", position = position_dodge()) +
   geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
+    geom_signif(comparisons=list(c("siNEG", "siILRUN")), annotations="***", y_position = 28, tip_length = 0, vjust=0.4) +
   scale_fill_manual(values = c("#56B4E9", "#0072B2"))+
   theme_set(theme_classic(base_size = 8)) +
   labs(title = "IL6",
@@ -172,7 +200,7 @@ Figure1C <- ggplot(kinetics_titres_stats, aes(y= mean, x=timepoint))+
   geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
   theme_set(theme_classic(base_size = 8)) +
   labs(x = "time post infection(hrs)",
-       y = "TCID50 per ml",
+       y = "Log10 TCID50 per ml",
        tag = "C")
   
 ggsave(
@@ -207,7 +235,7 @@ Figure1D <- ggplot(kinetics_RNA_stats, aes(y= mean, x=timepoint))+
   geom_point()+
   geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
   theme_set(theme_classic(base_size = 8)) +
-  labs(y = "SARS-CoV-2 RNA",
+  labs(y = "Relative SARS-CoV-2 RNA",
        x = "time post infection(hrs)",
        tag = "D")
   
@@ -245,7 +273,7 @@ Figure1E <- ggplot(kinetics_protein_stats, aes(y= mean, x=timepoint))+
   geom_point()+
   geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
   theme_set(theme_classic(base_size = 8)) +
-  labs(y = "SARS-CoV-2 N protein",
+  labs(y = "Relative SARS-CoV-2 N protein",
        x = "time post infection(hrs)",
        tag = "E")
   
