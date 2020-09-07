@@ -769,3 +769,36 @@ ggsave(
 
 ```
 
+```{r Supplementary Table 1}
+
+
+ILRUNgenesUninf_24hrs <- read_csv("results/sigILRUNgenesUninf24hr_LT07_rev.csv") %>% 
+  as_tibble() %>%
+  separate(X1, c("GENE_ID", "X1")) %>% 
+  select(-X1) %>% 
+  arrange(padj)
+write.csv(ILRUNgenesUninf_24hrs, "results/Supp1_ILRUNgenesUninf24hrs.csv")
+
+ILRUNgenesUninf_6hrs <- read_csv("results/sigILRUNgenesUninf6hr_LT07_rev.csv")  %>% 
+  as_tibble() %>%
+  separate(X1, c("GENE_ID", "X1")) %>% 
+  select(-X1) %>% 
+  arrange(padj)
+write.csv(ILRUNgenesUninf_6hrs, "results/Supp1_ILRUNgenesUninf6hrs.csv")
+
+ILRUNgenesInf_24hrs <- read_csv("results/sigILRUNgenesInf24hr_LT07_rev.csv") %>% 
+  as_tibble() %>%
+  separate(X1, c("GENE_ID", "X1")) %>% 
+  select(-X1) %>% 
+  arrange(padj)
+write.csv(ILRUNgenesInf_24hrs, "results/Supp1_ILRUNgenesInf24hrs.csv")
+
+ILRUNgenesInf_6hrs <- read_csv("results/sigILRUNgenesInf6hr_LT07_rev.csv")  %>% 
+  as_tibble() %>%
+  separate(X1, c("GENE_ID", "X1")) %>% 
+  select(-X1) %>% 
+  arrange(padj)
+write.csv(ILRUNgenesInf_6hrs, "results/Supp1_ILRUNgenesInf6hrs.csv")
+
+```
+
