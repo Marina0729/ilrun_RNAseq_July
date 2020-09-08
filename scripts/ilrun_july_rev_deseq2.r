@@ -771,6 +771,8 @@ sigILRUNgenesUninf24hr <- sigILRUNgenesUninf24hr[ which( abs(sigILRUNgenesUninf2
 # Slices out rows where the fold change is above 2 and below -2.
 # Abs=absolute, tells it to filter things above 2, ignoring whether value is positive or negative.
 sigILRUNgenesUninf24hr <- sigILRUNgenesUninf24hr[ which(sigILRUNgenesUninf24hr$baseMean > gamma), ]
+
+
 write.csv(sigILRUNgenesUninf24hr, file="results/sigILRUNgenesUninf24hr_LT07_rev.csv")
 # Slices out rows above an average count of 10 reads (anything below is rubbish).
 ILRUNgenesUninf24hr_hits <- rownames(sigILRUNgenesUninf24hr)

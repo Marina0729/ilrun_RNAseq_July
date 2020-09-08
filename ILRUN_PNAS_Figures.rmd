@@ -553,7 +553,7 @@ ILRUN_titres_stats <- ILRUN_titres %>%
 
 ##### plot the data ################
 Figure3B <- ggplot(ILRUN_titres, aes(y= TCID50, x= treatment))+
-  geom_boxplot()+
+  geom_boxplot(outlier.shape = NA)+
   geom_jitter(width = 0.1)+
   ylim(0, 10000)+
   theme_set(theme_classic(base_size = 8)) +
