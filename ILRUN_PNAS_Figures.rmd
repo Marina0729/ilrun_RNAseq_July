@@ -61,6 +61,7 @@ Figure1A <- ggplot(siRNA_valid_stats, aes(y= mean, x=siRNA))+
   geom_bar(stat= "Identity", color= "black", fill = "grey", position = position_dodge()) +
   geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
   geom_signif(comparisons=list(c("siNEG", "siILRUN")), annotations="***", y_position = 1.1, tip_length = 0, vjust=0.4) +
+  scale_y_continuous(breaks=c(0.25,0.5, 0.75, 1.0))+
   theme_set(theme_classic(base_size = 8)) +
   theme(axis.title.x = element_text(size = 8))+
   labs(tag = "A",
@@ -73,7 +74,7 @@ ggsave(
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 4,
+  width = 3.4,
   height = 6,
   units = "cm",
   dpi = 300,
@@ -88,25 +89,67 @@ ggsave(
 ##### performing ANOVA on experimental groups ################
 
 polyIC_reps_IFNb <- read.csv("data/Caco2_polyIC_reps.csv") %>%
-  filter(treatment == "polyIC") %>% 
+  filter(treatment == "poly(I:C)") %>% 
   filter(target == "IFNb")
 
-polyIC_reps_TNFa <- read.csv("data/Caco2_polyIC_reps.csv") %>%
-  filter(treatment == "polyIC") %>% 
+polyIC_reps_TNF <- read.csv("data/Caco2_polyIC_reps.csv") %>%
+  filter(treatment == "poly(I:C)") %>% 
   filter(target == "TNFa")
 
 polyIC_reps_IL6 <- read.csv("data/Caco2_polyIC_reps.csv") %>%
-  filter(treatment == "polyIC") %>% 
+  filter(treatment == "poly(I:C)") %>% 
   filter(target == "IL6")
+####################################################
+polyIC_reps_IFNb_treat_NEG <- read.csv("data/Caco2_polyIC_reps.csv") %>%
+  filter(siRNA == "siNEG") %>% 
+  filter(target == "IFNb")
 
+polyIC_reps_TNF_treat_NEG <- read.csv("data/Caco2_polyIC_reps.csv") %>%
+  filter(siRNA == "siNEG") %>% 
+  filter(target == "TNFa")
+
+polyIC_reps_IL6_treat_NEG <- read.csv("data/Caco2_polyIC_reps.csv") %>%
+  filter(siRNA == "siNEG") %>% 
+  filter(target == "IL6")
+####################################################
+polyIC_reps_IFNb_treat_ILRUN <- read.csv("data/Caco2_polyIC_reps.csv") %>%
+  filter(siRNA == "siILRUN") %>% 
+  filter(target == "IFNb")
+
+polyIC_reps_TNF_treat_ILRUN <- read.csv("data/Caco2_polyIC_reps.csv") %>%
+  filter(siRNA == "siILRUN") %>% 
+  filter(target == "TNFa")
+
+polyIC_reps_IL6_treat_ILRUN <- read.csv("data/Caco2_polyIC_reps.csv") %>%
+  filter(siRNA == "siILRUN") %>% 
+  filter(target == "IL6")
+##################################################
 polyIC_aov_IFNb <- aov(relative_mRNA ~ siRNA, data = polyIC_reps_IFNb)
 summary(polyIC_aov_IFNb)
 
-polyIC_aov_TNFa <- aov(relative_mRNA ~ siRNA, data = polyIC_reps_TNFa)
+polyIC_aov_TNF <- aov(relative_mRNA ~ siRNA, data = polyIC_reps_TNFa)
 summary(polyIC_aov_TNFa)
 
 polyIC_aov_IL6 <- aov(relative_mRNA ~ siRNA, data = polyIC_reps_IL6)
 summary(polyIC_aov_IL6)
+##################################################
+polyIC_aov_IFNb_treat_NEG <- aov(relative_mRNA ~ treatment, data = polyIC_reps_IFNb_treat_NEG)
+summary(polyIC_aov_IFNb_treat_NEG)
+
+polyIC_aov_TNF_treat_NEG <- aov(relative_mRNA ~ treatment, data = polyIC_reps_TNF_treat_NEG)
+summary(polyIC_aov_TNF_treat_NEG)
+
+polyIC_aov_IL6_treat_NEG <- aov(relative_mRNA ~ treatment, data = polyIC_reps_IL6_treat_NEG)
+summary(polyIC_aov_IL6_treat_NEG)
+##################################################
+polyIC_aov_IFNb_treat_ILRUN <- aov(relative_mRNA ~ treatment, data = polyIC_reps_IFNb_treat_ILRUN)
+summary(polyIC_aov_IFNb_treat_ILRUN)
+
+polyIC_aov_TNF_treat_ILRUN <- aov(relative_mRNA ~ treatment, data = polyIC_reps_TNF_treat_ILRUN)
+summary(polyIC_aov_TNF_treat_ILRUN)
+
+polyIC_aov_IL6_treat_ILRUN <- aov(relative_mRNA ~ treatment, data = polyIC_reps_IL6_treat_ILRUN)
+summary(polyIC_aov_IL6_treat_ILRUN)
 
 
 ##### data of means  ################
@@ -116,7 +159,7 @@ polyIC <- read.csv("data/Caco2_polyIC.csv") %>%
 
 #####order the x axis non-alphabetical##############
 polyIC$siRNA <- factor(polyIC$siRNA,levels =c("siNEG", "siILRUN"))
-polyIC$treatment <- factor(polyIC$treatment,levels =c("control", "polyIC"))
+polyIC$treatment <- factor(polyIC$treatment,levels =c("control", "poly(I:C)"))
 
 ##### plot the data ################
  IFNb <- polyIC %>% 
@@ -124,42 +167,51 @@ polyIC$treatment <- factor(polyIC$treatment,levels =c("control", "polyIC"))
   ggplot(aes(y= mean, x=siRNA, fill = treatment))+
   geom_bar(stat= "Identity", color= "black", position = position_dodge()) +
   geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
-  geom_signif(comparisons=list(c("siNEG", "siILRUN")), annotations="***", y_position = 1400, tip_length = 0, vjust=0.4) +
+  geom_signif(comparisons=list(c("siNEG", "siILRUN")), annotations="**", y_position = 1600, tip_length = 0, vjust=0.4) +
+  geom_signif(y_position=c(500, 1400), xmin=c(0.8, 1.8), xmax=c(1.2, 2.2),
+              annotation=c("**", "**"), tip_length=0) +
   scale_fill_manual(values = c("#56B4E9", "#0072B2"))+
   theme_set(theme_classic(base_size = 8)) +
   theme(legend.key.size = unit(0.3, "cm")) +
   labs(title = "IFNb",
        y ="Relative mRNA",
-       x = "")
+       x = "")+
+  theme(plot.title = element_text(hjust = 0.5, face = "italic"))
 
- TNFa <- polyIC %>% 
+ TNF <- polyIC %>% 
   filter(target == "TNFa") %>% 
   ggplot(aes(y= mean, x=siRNA, fill = treatment))+
   geom_bar(stat= "Identity", color= "black", position = position_dodge()) +
   geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
-   geom_signif(comparisons=list(c("siNEG", "siILRUN")), annotations="**", y_position = 35, tip_length = 0, vjust=0.4) +
+   geom_signif(comparisons=list(c("siNEG", "siILRUN")), annotations="*", y_position = 36, tip_length = 0, vjust=0.4) +
+   geom_signif(y_position=c(12, 32), xmin=c(0.8, 1.8), xmax=c(1.2, 2.2),
+              annotation=c("*", "**"), tip_length=0) +
   scale_fill_manual(values = c("#56B4E9", "#0072B2"))+
   theme_set(theme_classic(base_size = 8)) +
-  labs(title = "TNFa",
+  labs(title = "TNF",
        y ="",
-       x = "")
+       x = "")+
+  theme(plot.title = element_text(hjust = 0.5, face = "italic"))
  
   IL6 <- polyIC %>% 
   filter(target == "IL6") %>% 
   ggplot(aes(y= mean, x=siRNA, fill = treatment))+
   geom_bar(stat= "Identity", color= "black", position = position_dodge()) +
   geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
-    geom_signif(comparisons=list(c("siNEG", "siILRUN")), annotations="***", y_position = 28, tip_length = 0, vjust=0.4) +
+    geom_signif(comparisons=list(c("siNEG", "siILRUN")), annotations="**", y_position = 32, tip_length = 0, vjust=0.4) +
+    geom_signif(y_position=c(16, 28), xmin=c(0.8, 1.8), xmax=c(1.2, 2.2),
+              annotation=c("**", "**"), tip_length=0) +
   scale_fill_manual(values = c("#56B4E9", "#0072B2"))+
   theme_set(theme_classic(base_size = 8)) +
   labs(title = "IL6",
        y ="",
-       x = "")
+       x = "")+
+  theme(plot.title = element_text(hjust = 0.5, face = "italic"))
   
 legend <- get_legend(IFNb) 
 
 plot_cytokines <- plot_grid(IFNb + theme(legend.position="none"),
-                  TNFa + theme(legend.position="none"),
+                  TNF + theme(legend.position="none"),
                   IL6 + theme(legend.position="none"), nrow =1)
 
 Figure1B <- plot_grid(plot_cytokines, legend, rel_widths = c(3, .3))
@@ -170,7 +222,7 @@ ggsave(
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 14,
+  width = 14.6,
   height = 6,
   units = "cm",
   dpi = 300,
@@ -199,10 +251,11 @@ Figure1C <- ggplot(kinetics_titres_stats, aes(y= mean, x=timepoint))+
   geom_point()+
   geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
   theme_set(theme_classic(base_size = 8)) +
-  labs(x = "time post infection(hrs)",
-       y = "Log10 TCID50 per ml",
+  labs(x = "post-infection (h)",
+       y = expression(paste(log[10],TCID[50], mL^-1)),
        tag = "C")
-  
+
+
 ggsave(
   filename = "results/Figure1C.TIFF",
   plot = Figure1C,
@@ -235,8 +288,8 @@ Figure1D <- ggplot(kinetics_RNA_stats, aes(y= mean, x=timepoint))+
   geom_point()+
   geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
   theme_set(theme_classic(base_size = 8)) +
-  labs(y = "Relative SARS-CoV-2 RNA",
-       x = "time post infection(hrs)",
+  labs(y = "Relative SARS-CoV-2 RNA \n (fold change over inoculum)",
+       x = "post-infection (h)",
        tag = "D")
   
 ggsave(
@@ -273,8 +326,8 @@ Figure1E <- ggplot(kinetics_protein_stats, aes(y= mean, x=timepoint))+
   geom_point()+
   geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
   theme_set(theme_classic(base_size = 8)) +
-  labs(y = "Relative SARS-CoV-2 N protein",
-       x = "time post infection(hrs)",
+  labs(y = "Relative SARS-CoV-2 N protein \n (fold change over inoculum)",
+       x = "post-infection (h)",
        tag = "E")
   
 ggsave(
@@ -295,18 +348,20 @@ ggsave(
 ```{r Figure 2A. PCA plot }
 
 ##### PCA plot ########
+
 #read in the metadata
 ILRUNgenesUninf_metadata <- read_csv("data/ilrun_metadata_siRNA_LT07_rev.csv") %>% 
   filter(Infection == "Uninfected") %>% 
-  filter(timepoint == "6hr" | timepoint == "24hr") %>% 
+  filter(timepoint == "24hr") %>% 
   filter(Lane == "L001") %>%
   mutate(Name = str_extract(Sample, "^...."))
+
 #join with the counts data 
-ILRUNgenesUninf_expression <- read_csv("results/DESeq2_ilrun_siRNA_all_normalized_counts_LT07_rev.csv") %>% 
-  rename(gene_locus = X1) %>%
+ILRUNgenesUninf_expression <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_all_normalized_counts.csv", header=TRUE) %>%
   gather(Sample, expression, -gene_locus) %>%
   filter(str_detect(Sample, 'L001')) %>% 
   right_join(ILRUNgenesUninf_metadata, by = "Sample") 
+
 #scale gene expression for all samples 
 ILRUNgenesUninf_expression_scaled_genes <- ILRUNgenesUninf_expression %>%
   spread(gene_locus, expression) %>%
@@ -322,18 +377,14 @@ PCA_data_ILRUNgenesUninf_pca_genes <- ILRUNgenesUninf_pca_genes$x %>%
   left_join(ILRUNgenesUninf_metadata, by = "Sample") %>%
   spread(PC, expression)
 
-PCA_data_ILRUNgenesUninf_ <- ggplot(PCA_data_ILRUNgenesUninf_pca_genes, aes(x = PC1, y = PC2)) +
-  geom_point(aes(color = siRNA)) +
-  geom_text(aes(label = timepoint), size = 4) + 
-  theme_set(theme_classic(base_size = 10)) +
-  labs(tag = "A")
-
+PCA_data_ILRUNgenesUninf_pca_genes$siRNA <- factor(PCA_data_ILRUNgenesUninf_pca_genes$siRNA,levels =c("NEG", "ILRUN"))
 
 #plot the data
 Figure2A <- ggplot(PCA_data_ILRUNgenesUninf_pca_genes, aes(x = PC1, y = PC2)) +
-  geom_point(aes(fill = Condition),color = "black", pch = 21, size = 4)+
+  geom_point(aes(fill = siRNA),color = "black", pch = 21, size = 3)+
+  scale_fill_manual(values = c("#F0E442", "#D55E00"))+
   theme_set(theme_classic(base_size = 10)) +
-  theme(legend.position = "none")+
+  theme(legend.position="bottom") +
   labs(tag = "A")
 
 ggsave(
@@ -343,7 +394,7 @@ ggsave(
   path = NULL,
   scale = 1,
   width = 6,
-  height = 8,
+  height = 7,
   units = "cm",
   dpi = 300,
   limitsize = TRUE,)
@@ -359,7 +410,7 @@ p1 <- EnhancedVolcano(forplotting_ILRUNgenesUninf24hr,
                                                    lab = rownames(forplotting_ILRUNgenesUninf24hr),
                                                    x = 'log2FoldChange',
                                                    y = 'padj',
-                                                   selectLab = c(immune_genes_Uninf24hr$gene),
+                                                   selectLab = c(immune_genes_Uninf24hr$value),
                                                    xlim = c(-3, 3),
                                                    pCutoff = 0.05,
                                                    FCcutoff = 1,
@@ -391,7 +442,7 @@ ggsave(
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 11 ,
+  width = 12 ,
   height = 8,
   units = "cm",
   dpi = 300,
@@ -401,12 +452,44 @@ ggsave(
 
 ```
 
-```{r validation of IL6R, VIM and ISG15}
+```{r Figure 2C validation of IL6R, VIM and ISG15}
+
+DEgene_validation <- read.csv("data/RTPCR_validation.csv") %>% 
+  mutate(upper = log2FoldChange + lfcSE) %>% 
+  mutate(lower = log2FoldChange - lfcSE) %>%
+  mutate(direction = if_else(log2FoldChange >= 0, 'UP', 'DOWN'))
+
+dir <- c("UP" = "red", "DOWN" = "blue")  
+
+Figure2C <- ggplot(DEgene_validation, aes(y= log2FoldChange, x=GENE_ID, fill = direction))+
+  geom_bar(stat= "Identity", color= "black", position = position_dodge()) +
+  facet_wrap(~ assay, dir = "h")+
+  geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
+  ylim(-5, 7)+
+  scale_fill_manual(values = dir)+
+  theme_set(theme_classic(base_size = 8))+
+  theme(legend.key.size = unit(0.3, "cm"))+
+  labs(tag = "C",
+       y = expression(paste(Log[2], " fold change")),
+       x = "gene")
+
+ggsave(
+  filename = "results/Figure2C.TIFF",
+  plot = Figure2C,
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = 16 ,
+  height = 6,
+  units = "cm",
+  dpi = 300,
+  limitsize = TRUE,)
+
 
 ```
 
 
-```{r Figure3A. Enriched pathways }
+```{r Figure2D. Enriched pathways }
 
 
 pathway_ILRUNgenesUninf24hr <- read.csv("data/ILRUNgenes_Uninf_24hrs_david_default_output.csv") %>% 
@@ -426,7 +509,7 @@ gene_ontology_ILRUNgenesUninf24hr <- read.csv("data/ILRUNgenes_Uninf_24hrs_david
 write.csv(pathway_ILRUNgenesUninf24hr , "results/pathway_annotation_ILRUNgenesUninf24hr.csv")
 
 ###### Pathway enrichment  ##############
-Figure3A <- ggplot(pathway_ILRUNgenesUninf24hr) + 
+Figure2D <- ggplot(pathway_ILRUNgenesUninf24hr) + 
   geom_bar(aes(x = reorder(Pathway, -PValue), y = Fold_enrichment, fill = PValue), stat = 'identity') +
   coord_flip() +
   scale_fill_viridis_c(direction = -1) +
@@ -439,7 +522,7 @@ Figure3A <- ggplot(pathway_ILRUNgenesUninf24hr) +
   
 ggsave(
   filename = "results/Figure3A.TIFF",
-  plot = Figure3A,
+  plot = Figure2D,
   device = NULL,
   path = NULL,
   scale = 1,
