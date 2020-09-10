@@ -61,7 +61,7 @@ Figure1A <- ggplot(siRNA_valid_stats, aes(y= mean, x=siRNA))+
   geom_bar(stat= "Identity", color= "black", fill = "grey", position = position_dodge()) +
   geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
   geom_signif(comparisons=list(c("siNEG", "siILRUN")), annotations="***", y_position = 1.1, tip_length = 0, vjust=0.4) +
-  scale_y_continuous(breaks=c(0.25,0.5, 0.75, 1.0))+
+  scale_y_continuous(breaks=c(0, 0.25,0.5, 0.75, 1.0))+
   theme_set(theme_classic(base_size = 8)) +
   theme(axis.title.x = element_text(size = 8))+
   labs(tag = "A",
@@ -249,6 +249,8 @@ kinetics_titres_stats <- kinetics_titres %>%
 Figure1C <- ggplot(kinetics_titres_stats, aes(y= mean, x=timepoint))+
   geom_line()+
   geom_point()+
+  ylim(0,100000)+
+  scale_x_continuous(breaks=c(0,3, 6, 12, 24, 48))+
   geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
   theme_set(theme_classic(base_size = 8)) +
   labs(x = "post-infection (h)",
@@ -286,6 +288,8 @@ kinetics_RNA_stats <- kinetics_RNA %>%
 Figure1D <- ggplot(kinetics_RNA_stats, aes(y= mean, x=timepoint))+
   geom_line()+
   geom_point()+
+  ylim(0, 10)+
+  scale_x_continuous(breaks=c(0,3, 6, 12, 24, 48))+
   geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
   theme_set(theme_classic(base_size = 8)) +
   labs(y = "Relative SARS-CoV-2 RNA \n (fold change over inoculum)",
@@ -324,6 +328,8 @@ kinetics_protein_stats <- kinetics_protein %>%
 Figure1E <- ggplot(kinetics_protein_stats, aes(y= mean, x=timepoint))+
   geom_line()+
   geom_point()+
+  ylim(0, 150)+
+  scale_x_continuous(breaks=c(0,3, 6, 12, 24, 48))+
   geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
   theme_set(theme_classic(base_size = 8)) +
   labs(y = "Relative SARS-CoV-2 N protein \n (fold change over inoculum)",
@@ -512,6 +518,7 @@ write.csv(pathway_ILRUNgenesUninf24hr , "results/pathway_annotation_ILRUNgenesUn
 Figure2D <- ggplot(pathway_ILRUNgenesUninf24hr) + 
   geom_bar(aes(x = reorder(Pathway, -PValue), y = Fold_enrichment, fill = PValue), stat = 'identity') +
   coord_flip() +
+  ylim(0,12)+
   scale_fill_viridis_c(direction = -1) +
   theme_set(theme_classic(base_size = 6)) +
   theme(legend.key.size = unit(0.3, "cm")) +
@@ -586,9 +593,11 @@ ggsave(
 
 ```{r Figure 3A viral read counts}
 
-cpm_infected <- read.csv("results/coverview_ilrun_SARSCOV2_infected_cpm.csv")
+cpm_infected <- read.csv("results/coverview_ilrun_SARSCOV2_infected_cpm.csv") %>% 
+  mutate(timepoint = str_remove(timepoint, "hr"))
+  
 
-cpm_infected$timepoint <- factor(cpm_infected$timepoint,levels =c("6hr", "24hr"))
+cpm_infected$timepoint <- factor(cpm_infected$timepoint,levels =c("6", "24"))
 cpm_infected$siRNA <- factor(cpm_infected$siRNA,levels =c("NEG", "ILRUN"))
 
 Figure4A <- ggplot(cpm_infected, aes(x = timepoint, y = cpm)) +
@@ -599,8 +608,8 @@ Figure4A <- ggplot(cpm_infected, aes(x = timepoint, y = cpm)) +
   scale_fill_manual(values = c("#F0E442", "#D55E00"))+
   theme(legend.key.size = unit(0.3, "cm")) +
   labs(tag = "A",
-       x= "",
-       y = "Viral RNA (counts per million")
+       x= "post-infection (h)",
+       y = "Viral RNA (counts per million)")
 
 
 ggsave(
@@ -638,10 +647,10 @@ ILRUN_titres_stats <- ILRUN_titres %>%
 Figure3B <- ggplot(ILRUN_titres, aes(y= TCID50, x= treatment))+
   geom_boxplot(outlier.shape = NA)+
   geom_jitter(width = 0.1)+
-  ylim(0, 10000)+
+  scale_y_log10()+
   theme_set(theme_classic(base_size = 8)) +
   labs(x = "",
-       y = "Log10 TCID50 per ml",
+       y = expression(paste(log[10],TCID[50], mL^-1)),
        tag = "B")
   
 ggsave(
@@ -703,8 +712,10 @@ ACE2 <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
   labs(x = "",
        y = "normalized counts",
        title = "ACE2")+
-  theme(legend.key.size = unit(0.2, "cm")) +
-  theme_set(theme_classic(base_size = 8))
+  theme_set(theme_classic(base_size = 8))+
+  theme(legend.key.size = unit(0.2, "cm"),
+        plot.title = element_text(hjust = 0.5, face = "italic"))
+  
 
 TMPRSS2 <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
   filter(gene == "TMPRSS2")%>%
@@ -717,7 +728,9 @@ TMPRSS2 <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
   labs(x = "",
        y = "normalized counts",
        title ="TMPRSS2")+
-  theme_set(theme_classic(base_size = 8))
+  theme_set(theme_classic(base_size = 8))+
+  theme(legend.key.size = unit(0.2, "cm"),
+        plot.title = element_text(hjust = 0.5, face = "italic"))
 
 FURIN <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
   filter(gene == "FURIN")%>%
@@ -743,7 +756,9 @@ CTSL <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
   labs(x = "",
        y = "normalized counts",
        title ="CTSL")+
-  theme_set(theme_classic(base_size = 8))
+  theme_set(theme_classic(base_size = 8))+
+  theme(legend.key.size = unit(0.2, "cm"),
+        plot.title = element_text(hjust = 0.5, face = "italic"))
 
 CTSB <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
   filter(gene == "CTSB")%>%
@@ -806,8 +821,9 @@ ILRUN_NHBE <- ggplot(ILRUN_NHBE_data, aes( x= stimulation, y = expn)) +
   labs(title = "ILRUN", 
        x = "",
        y = "normalized counts")+
-  theme(legend.key.size = unit(0.2, "cm")) +
-  theme_set(theme_classic(base_size = 8))
+  theme_set(theme_classic(base_size = 8))+
+  theme(legend.key.size = unit(0.2, "cm"),
+        plot.title = element_text(hjust = 0.5, face = "italic"))
 
 
 ACE2_NHBE <- ggplot(ACE2_NHBE_data, aes( x= stimulation, y = expn)) +
@@ -816,7 +832,9 @@ ACE2_NHBE <- ggplot(ACE2_NHBE_data, aes( x= stimulation, y = expn)) +
   labs(title = "ACE2", 
        x = "",
        y = "normalized counts")+
-  theme_set(theme_classic(base_size = 8))
+  theme_set(theme_classic(base_size = 8))+
+  theme(legend.key.size = unit(0.2, "cm"),
+        plot.title = element_text(hjust = 0.5, face = "italic"))
 
 AGT_NHBE <- ggplot(AGT_NHBE_data, aes( x= stimulation, y = expn)) +
   geom_boxplot(aes(fill = stimulation)) +
@@ -824,7 +842,9 @@ AGT_NHBE <- ggplot(AGT_NHBE_data, aes( x= stimulation, y = expn)) +
   labs(title = "AGT", 
        x = "",
        y = "normalized counts")+
-  theme_set(theme_classic(base_size = 8))
+  theme_set(theme_classic(base_size = 8))+
+  theme(legend.key.size = unit(0.2, "cm"),
+        plot.title = element_text(hjust = 0.5, face = "italic"))
 
 
 legend_NHBE <- get_legend(ILRUN_NHBE) 
@@ -846,7 +866,7 @@ ggsave(
   height = 5.5,
   units = "cm",
   dpi = 300,
-  limitsize = TRUE,)
+  limitsize = TRUE)
 
 
 
