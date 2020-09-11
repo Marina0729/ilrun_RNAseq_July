@@ -249,12 +249,12 @@ kinetics_titres_stats <- kinetics_titres %>%
 Figure1C <- ggplot(kinetics_titres_stats, aes(y= mean, x=timepoint))+
   geom_line()+
   geom_point()+
-  ylim(0,100000)+
+  scale_y_log10(breaks = c(10000, 100000))+
   scale_x_continuous(breaks=c(0,3, 6, 12, 24, 48))+
   geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
   theme_set(theme_classic(base_size = 8)) +
   labs(x = "post-infection (h)",
-       y = expression(paste(log[10],TCID[50], mL^-1)),
+       y = expression(paste(TCID[50], mL^-1)),
        tag = "C")
 
 
@@ -269,6 +269,7 @@ ggsave(
   units = "cm",
   dpi = 300,
   limitsize = TRUE)
+
 
 ```
 
@@ -646,11 +647,10 @@ ILRUN_titres_stats <- ILRUN_titres %>%
 ##### plot the data ################
 Figure3B <- ggplot(ILRUN_titres, aes(y= TCID50, x= treatment))+
   geom_boxplot(outlier.shape = NA)+
-  geom_jitter(width = 0.1)+
   scale_y_log10()+
   theme_set(theme_classic(base_size = 8)) +
   labs(x = "",
-       y = expression(paste(log[10],TCID[50], mL^-1)),
+       y = expression(paste(TCID[50], mL^-1)),
        tag = "B")
   
 ggsave(
