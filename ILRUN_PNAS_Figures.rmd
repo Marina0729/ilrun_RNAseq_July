@@ -26,6 +26,7 @@ library(ggsci)
 library(cowplot)
 library(patchwork)
 library(ggsignif)
+library(scales)
 
 
 knitr::opts_chunk$set(
@@ -249,7 +250,8 @@ kinetics_titres_stats <- kinetics_titres %>%
 Figure1C <- ggplot(kinetics_titres_stats, aes(y= mean, x=timepoint))+
   geom_line()+
   geom_point()+
-  scale_y_log10(breaks = c(10000, 100000))+
+  scale_y_log10(breaks = scales::trans_breaks("log10", function(x) 10^x),labels = scales::trans_format("log10", scales::math_format(10^.x)))+
+  annotation_logticks(sides = "l") +
   scale_x_continuous(breaks=c(0,3, 6, 12, 24, 48))+
   geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
   theme_set(theme_classic(base_size = 8)) +
@@ -257,6 +259,18 @@ Figure1C <- ggplot(kinetics_titres_stats, aes(y= mean, x=timepoint))+
        y = expression(paste(TCID[50], mL^-1)),
        tag = "C")
 
+
+Figure1C_OPTION <- ggplot(kinetics_titres_stats, aes(y= mean, x=timepoint))+
+  geom_line()+
+  geom_point()+
+  scale_y_log10(labels = scientific, limits=c(3000, 200000))+
+  annotation_logticks(sides = "l") +
+  scale_x_continuous(breaks=c(0,3, 6, 12, 24, 48))+
+  geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
+  theme_set(theme_classic(base_size = 8)) +
+  labs(x = "post-infection (h)",
+       y = expression(paste(TCID[50], mL^-1)),
+       tag = "C")
 
 ggsave(
   filename = "results/Figure1C.TIFF",
@@ -270,7 +284,29 @@ ggsave(
   dpi = 300,
   limitsize = TRUE)
 
+ggsave(
+  filename = "results/Figure1C.PNG",
+  plot = Figure1C_OPTION,
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = 6,
+  height = 6,
+  units = "cm",
+  dpi = 300,
+  limitsize = TRUE)
 
+ggsave(
+  filename = "results/Figure1C_log_trans.PNG",
+  plot = Figure1C,
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = 6,
+  height = 6,
+  units = "cm",
+  dpi = 300,
+  limitsize = TRUE)
 ```
 
 ```{r Figure 1D kinetics RNA  }
@@ -361,6 +397,7 @@ ILRUNgenesUninf_metadata <- read_csv("data/ilrun_metadata_siRNA_LT07_rev.csv") %
   filter(Infection == "Uninfected") %>% 
   filter(timepoint == "24hr") %>% 
   filter(Lane == "L001") %>%
+  mutate(siRNA = str_c("si", siRNA)) %>% 
   mutate(Name = str_extract(Sample, "^...."))
 
 #join with the counts data 
@@ -384,14 +421,15 @@ PCA_data_ILRUNgenesUninf_pca_genes <- ILRUNgenesUninf_pca_genes$x %>%
   left_join(ILRUNgenesUninf_metadata, by = "Sample") %>%
   spread(PC, expression)
 
-PCA_data_ILRUNgenesUninf_pca_genes$siRNA <- factor(PCA_data_ILRUNgenesUninf_pca_genes$siRNA,levels =c("NEG", "ILRUN"))
+PCA_data_ILRUNgenesUninf_pca_genes$siRNA <- factor(PCA_data_ILRUNgenesUninf_pca_genes$siRNA,levels =c("siNEG", "siILRUN"))
 
 #plot the data
 Figure2A <- ggplot(PCA_data_ILRUNgenesUninf_pca_genes, aes(x = PC1, y = PC2)) +
   geom_point(aes(fill = siRNA),color = "black", pch = 21, size = 3)+
   scale_fill_manual(values = c("#F0E442", "#D55E00"))+
   theme_set(theme_classic(base_size = 10)) +
-  theme(legend.position="bottom") +
+  theme(legend.position="bottom",
+        legend.title = element_blank()) +
   labs(tag = "A")
 
 ggsave(
@@ -450,7 +488,7 @@ ggsave(
   path = NULL,
   scale = 1,
   width = 12 ,
-  height = 8,
+  height = 10,
   units = "cm",
   dpi = 300,
   limitsize = TRUE,)
@@ -466,16 +504,18 @@ DEgene_validation <- read.csv("data/RTPCR_validation.csv") %>%
   mutate(lower = log2FoldChange - lfcSE) %>%
   mutate(direction = if_else(log2FoldChange >= 0, 'UP', 'DOWN'))
 
-dir <- c("UP" = "red", "DOWN" = "blue")  
+dir <- c("UP" = "white", "DOWN" = "grey")  
 
 Figure2C <- ggplot(DEgene_validation, aes(y= log2FoldChange, x=GENE_ID, fill = direction))+
   geom_bar(stat= "Identity", color= "black", position = position_dodge()) +
-  facet_wrap(~ assay, dir = "h")+
+  facet_wrap(~ assay, dir = "v")+
   geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
+  geom_text(aes(label = padj_up),position=position_dodge(width=0.9), vjust=-3.7, size = 3)+
+  geom_text(aes(label = padj_down),position=position_dodge(width=0.9), vjust=2.7, size = 3)+
   ylim(-5, 7)+
   scale_fill_manual(values = dir)+
-  theme_set(theme_classic(base_size = 8))+
-  theme(legend.key.size = unit(0.3, "cm"))+
+  theme_set(theme_classic(base_size = 11.5))+
+  theme(legend.position = "none")+
   labs(tag = "C",
        y = expression(paste(Log[2], " fold change")),
        x = "gene")
@@ -486,8 +526,8 @@ ggsave(
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 16 ,
-  height = 6,
+  width = 6,
+  height = 14,
   units = "cm",
   dpi = 300,
   limitsize = TRUE,)
@@ -496,7 +536,7 @@ ggsave(
 ```
 
 
-```{r Figure2D. Enriched pathways }
+```{r Figure 2D. Enriched pathways }
 
 
 pathway_ILRUNgenesUninf24hr <- read.csv("data/ILRUNgenes_Uninf_24hrs_david_default_output.csv") %>% 
@@ -521,21 +561,24 @@ Figure2D <- ggplot(pathway_ILRUNgenesUninf24hr) +
   coord_flip() +
   ylim(0,12)+
   scale_fill_viridis_c(direction = -1) +
-  theme_set(theme_classic(base_size = 6)) +
-  theme(legend.key.size = unit(0.3, "cm")) +
+  theme_set(theme_classic(base_size = 11)) +
+  theme(legend.key.size = unit(0.3, "cm"),
+    legend.position = c(.95, .45),
+    legend.justification = c("right", "top"),
+    legend.box.just = "right")+
   labs(y = "Fold enrichment",
        x = "KEGG or BIOCARTA Pathway",
        fill = "PValue")
   
   
 ggsave(
-  filename = "results/Figure3A.TIFF",
+  filename = "results/Figure2D.TIFF",
   plot = Figure2D,
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 9 ,
-  height = 8,
+  width = 12,
+  height = 11.5,
   units = "cm",
   dpi = 300,
   limitsize = TRUE)
@@ -590,27 +633,40 @@ ggsave(
 
 
 ```
+```{r Figure 3 KEGG Pathway}
+
+KEGG <-read.csv("data/24h-ilrun-vs-neg-uninf_color.csv") %>% 
+  filter(Gene.Symbol == "AGT" | Gene.Symbol == "ACE2" |Gene.Symbol == "CTSA" |
+           Gene.Symbol == "ACE" |Gene.Symbol == "NLN" |Gene.Symbol == "ANPEP" |
+           Gene.Symbol == "PREP" |Gene.Symbol == "ATP6AP2" |Gene.Symbol == "PRCP" |
+           Gene.Symbol == "LNPEP"|Gene.Symbol == "THOP1" )
 
 
-```{r Figure 3A viral read counts}
+
+```
+
+
+```{r Figure 4A viral read counts}
 
 cpm_infected <- read.csv("results/coverview_ilrun_SARSCOV2_infected_cpm.csv") %>% 
-  mutate(timepoint = str_remove(timepoint, "hr"))
+  mutate(timepoint = str_remove(timepoint, "hr")) %>% 
+  mutate(siRNA = str_c("si", siRNA))
   
 
 cpm_infected$timepoint <- factor(cpm_infected$timepoint,levels =c("6", "24"))
-cpm_infected$siRNA <- factor(cpm_infected$siRNA,levels =c("NEG", "ILRUN"))
+cpm_infected$siRNA <- factor(cpm_infected$siRNA,levels =c("siNEG", "siILRUN"))
 
 Figure4A <- ggplot(cpm_infected, aes(x = timepoint, y = cpm)) +
   geom_boxplot(aes(fill = siRNA)) +
-  scale_y_log10() +
   ylim(0, 2500)+
-  theme_set(theme_classic(base_size = 8)) +
+  theme_set(theme_classic(base_size = 10)) +
   scale_fill_manual(values = c("#F0E442", "#D55E00"))+
-  theme(legend.key.size = unit(0.3, "cm")) +
+  theme(legend.key.size = unit(0.5, "cm"),
+        legend.title = element_blank(),
+        legend.position = "bottom")+
   labs(tag = "A",
        x= "post-infection (h)",
-       y = "Viral RNA (counts per million)")
+       y = "Viral RNA \n (counts per million)")
 
 
 ggsave(
@@ -619,8 +675,8 @@ ggsave(
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 10,
-  height = 5.5,
+  width = 8,
+  height = 6,
   units = "cm",
   dpi = 300,
   limitsize = TRUE)
@@ -628,12 +684,12 @@ ggsave(
 ```
 
 
-```{r Figure 3B TCID50 vaidation of ILRUN proviral effect}
+```{r Figure 4B TCID50 vaidation of ILRUN proviral effect}
 
 
 
 ILRUN_titres <- read.csv("data/siILRUN_SARSCOV2.csv") %>%
-    mutate(treatment = factor(treatment, levels = c("siNEG", "siILRUN", "pCAGGS-GFP", "pCAGGs-ILRUN-FLAG")))
+    mutate(treatment = factor(treatment, levels = c("siNEG", "siILRUN", "pGFP", "pILRUN")))
 
 
 ###Summarise for plotting bar graph #####
@@ -642,13 +698,14 @@ ILRUN_titres_stats <- ILRUN_titres %>%
   summarise(mean = mean(TCID50), sd = sd(TCID50)) %>% 
   mutate(upper = mean + sd) %>% 
   mutate(lower = mean - sd) %>%
-  mutate(treatment = factor(treatment, levels = c("siNEG", "siILRUN", "pCAGGS-GFP", "pCAGGs-ILRUN-FLAG")))
+  mutate(treatment = factor(treatment, levels = c("siNEG", "siILRUN", "pGFP", "pILRUN")))
 
 ##### plot the data ################
 Figure3B <- ggplot(ILRUN_titres, aes(y= TCID50, x= treatment))+
-  geom_boxplot(outlier.shape = NA)+
-  scale_y_log10()+
-  theme_set(theme_classic(base_size = 8)) +
+  geom_boxplot(fill = "grey")+
+  scale_y_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), 
+                labels = scales::trans_format("log10", scales::math_format(10^.x)))+
+  theme_set(theme_classic(base_size = 10)) +
   labs(x = "",
        y = expression(paste(TCID[50], mL^-1)),
        tag = "B")
@@ -659,8 +716,8 @@ ggsave(
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 11,
-  height = 5.5,
+  width = 10,
+  height = 6,
   units = "cm",
   dpi = 300,
   limitsize = TRUE)
@@ -703,8 +760,9 @@ ggsave(
 
 ACE2 <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
   filter(gene == "ACE2")%>%
-  filter(timepoint == "24hr") %>% 
-  mutate(siRNA = factor(siRNA, levels = c("NEG", "ILRUN"))) %>% 
+  filter(timepoint == "24hr") %>%
+  mutate(siRNA = str_c("si", siRNA)) %>% 
+  mutate(siRNA = factor(siRNA, levels = c("siNEG", "siILRUN"))) %>% 
   mutate(Infection = factor(Infection, levels = c("Uninfected", "Infected"))) %>% 
   ggplot(aes(x= Infection, y = expression)) +
   geom_boxplot(aes(fill = siRNA)) +
@@ -712,8 +770,9 @@ ACE2 <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
   labs(x = "",
        y = "normalized counts",
        title = "ACE2")+
-  theme_set(theme_classic(base_size = 8))+
-  theme(legend.key.size = unit(0.2, "cm"),
+  theme_set(theme_classic(base_size = 10))+
+  theme(legend.key.size = unit(0.3, "cm"),
+        legend.title = element_blank(),
         plot.title = element_text(hjust = 0.5, face = "italic"))
   
 
@@ -728,22 +787,10 @@ TMPRSS2 <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
   labs(x = "",
        y = "normalized counts",
        title ="TMPRSS2")+
-  theme_set(theme_classic(base_size = 8))+
-  theme(legend.key.size = unit(0.2, "cm"),
+  theme_set(theme_classic(base_size = 10))+
+  theme(legend.key.size = unit(0.3, "cm"),
         plot.title = element_text(hjust = 0.5, face = "italic"))
 
-FURIN <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
-  filter(gene == "FURIN")%>%
-  filter(timepoint == "24hr") %>% 
-  mutate(siRNA = factor(siRNA, levels = c("NEG", "ILRUN"))) %>%
-  mutate(Infection = factor(Infection, levels = c("Uninfected", "Infected"))) %>% 
-  ggplot(aes(x= Infection, y = expression)) +
-  geom_boxplot(aes(fill = siRNA)) +
-  scale_fill_manual(values = c("#F0E442", "#D55E00"))+
-  labs(x = "",
-       y = "normalized counts",
-       title ="FURIN")+
-  theme_set(theme_classic(base_size = 8))
 
 CTSL <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
   filter(gene == "CTSL")%>%
@@ -756,22 +803,9 @@ CTSL <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
   labs(x = "",
        y = "normalized counts",
        title ="CTSL")+
-  theme_set(theme_classic(base_size = 8))+
-  theme(legend.key.size = unit(0.2, "cm"),
+  theme_set(theme_classic(base_size = 10))+
+  theme(legend.key.size = unit(0.3, "cm"),
         plot.title = element_text(hjust = 0.5, face = "italic"))
-
-CTSB <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
-  filter(gene == "CTSB")%>%
-  filter(timepoint == "24hr") %>%
-  mutate(siRNA = factor(siRNA, levels = c("NEG", "ILRUN"))) %>%
-  mutate(Infection = factor(Infection, levels = c("Uninfected", "Infected"))) %>% 
-  ggplot(aes(x= Infection, y = expression)) +
-  geom_boxplot(aes(fill = siRNA)) +
-  scale_fill_manual(values = c("#F0E442", "#D55E00"))+
-  labs(x = "",
-       y = "normalized counts",
-       title ="CTSB")+
-  theme_set(theme_classic(base_size = 8))
 
 
 legend <- get_legend(ACE2) 
@@ -788,7 +822,7 @@ ggsave(
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 12 ,
+  width = 16 ,
   height = 5.5,
   units = "cm",
   dpi = 300,
@@ -821,8 +855,8 @@ ILRUN_NHBE <- ggplot(ILRUN_NHBE_data, aes( x= stimulation, y = expn)) +
   labs(title = "ILRUN", 
        x = "",
        y = "normalized counts")+
-  theme_set(theme_classic(base_size = 8))+
-  theme(legend.key.size = unit(0.2, "cm"),
+  theme_set(theme_classic(base_size = 10))+
+  theme(legend.key.size = unit(0.3, "cm"),
         plot.title = element_text(hjust = 0.5, face = "italic"))
 
 
@@ -832,8 +866,8 @@ ACE2_NHBE <- ggplot(ACE2_NHBE_data, aes( x= stimulation, y = expn)) +
   labs(title = "ACE2", 
        x = "",
        y = "normalized counts")+
-  theme_set(theme_classic(base_size = 8))+
-  theme(legend.key.size = unit(0.2, "cm"),
+  theme_set(theme_classic(base_size = 10))+
+  theme(legend.key.size = unit(0.3, "cm"),
         plot.title = element_text(hjust = 0.5, face = "italic"))
 
 AGT_NHBE <- ggplot(AGT_NHBE_data, aes( x= stimulation, y = expn)) +
@@ -842,8 +876,8 @@ AGT_NHBE <- ggplot(AGT_NHBE_data, aes( x= stimulation, y = expn)) +
   labs(title = "AGT", 
        x = "",
        y = "normalized counts")+
-  theme_set(theme_classic(base_size = 8))+
-  theme(legend.key.size = unit(0.2, "cm"),
+  theme_set(theme_classic(base_size = 10))+
+  theme(legend.key.size = unit(0.3, "cm"),
         plot.title = element_text(hjust = 0.5, face = "italic"))
 
 
@@ -862,7 +896,7 @@ ggsave(
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 12,
+  width = 16,
   height = 5.5,
   units = "cm",
   dpi = 300,
