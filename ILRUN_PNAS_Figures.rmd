@@ -543,7 +543,7 @@ pathway_ILRUNgenesUninf24hr <- read.csv("data/ILRUNgenes_Uninf_24hrs_david_defau
   as_tibble() %>%
   arrange(PValue) %>%
   filter(Category == "BIOCARTA" | Category == "KEGG_PATHWAY") %>% 
-  filter(PValue < 0.05) %>% 
+  filter(PValue < 0.01) %>% 
   separate(Term, c("code", "Pathway"), sep = ":")
 
 gene_ontology_ILRUNgenesUninf24hr <- read.csv("data/ILRUNgenes_Uninf_24hrs_david_default_output.csv") %>% 
@@ -561,13 +561,13 @@ Figure2D <- ggplot(pathway_ILRUNgenesUninf24hr) +
   coord_flip() +
   ylim(0,12)+
   scale_fill_viridis_c(direction = -1) +
-  theme_set(theme_classic(base_size = 11)) +
+  theme_set(theme_classic(base_size = 10)) +
   theme(legend.key.size = unit(0.3, "cm"),
     legend.position = c(.95, .45),
     legend.justification = c("right", "top"),
     legend.box.just = "right")+
   labs(y = "Fold enrichment",
-       x = "KEGG or BIOCARTA Pathway",
+       x = "KEGG or \n BIOCARTA Pathway",
        fill = "PValue")
   
   
@@ -577,8 +577,8 @@ ggsave(
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 12,
-  height = 11.5,
+  width = 18,
+  height = 6,
   units = "cm",
   dpi = 300,
   limitsize = TRUE)
