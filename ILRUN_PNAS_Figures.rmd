@@ -428,7 +428,7 @@ Figure2A <- ggplot(PCA_data_ILRUNgenesUninf_pca_genes, aes(x = PC1, y = PC2)) +
   geom_point(aes(fill = siRNA),color = "black", pch = 21, size = 3)+
   scale_fill_manual(values = c("#F0E442", "#D55E00"))+
   theme_set(theme_classic(base_size = 10)) +
-  theme(legend.position="bottom",
+  theme(legend.position="top",
         legend.title = element_blank()) +
   labs(tag = "A")
 
@@ -439,7 +439,7 @@ ggsave(
   path = NULL,
   scale = 1,
   width = 6,
-  height = 7,
+  height = 7.5,
   units = "cm",
   dpi = 300,
   limitsize = TRUE,)
@@ -488,7 +488,7 @@ ggsave(
   path = NULL,
   scale = 1,
   width = 12 ,
-  height = 10,
+  height = 8,
   units = "cm",
   dpi = 300,
   limitsize = TRUE,)
@@ -508,10 +508,10 @@ dir <- c("UP" = "white", "DOWN" = "grey")
 
 Figure2C <- ggplot(DEgene_validation, aes(y= log2FoldChange, x=GENE_ID, fill = direction))+
   geom_bar(stat= "Identity", color= "black", position = position_dodge()) +
-  facet_wrap(~ assay, dir = "v")+
+  facet_wrap(~ assay, dir = "h")+
   geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
-  geom_text(aes(label = padj_up),position=position_dodge(width=0.9), vjust=-3.7, size = 3)+
-  geom_text(aes(label = padj_down),position=position_dodge(width=0.9), vjust=2.7, size = 3)+
+  geom_text(aes(label = padj_up),position=position_dodge(width=0.9), vjust=-2.8, size = 5)+
+  geom_text(aes(label = padj_down),position=position_dodge(width=0.9), vjust=2.7, size = 5)+
   ylim(-5, 7)+
   scale_fill_manual(values = dir)+
   theme_set(theme_classic(base_size = 11.5))+
@@ -526,8 +526,8 @@ ggsave(
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 6,
-  height = 14,
+  width = 16,
+  height = 8,
   units = "cm",
   dpi = 300,
   limitsize = TRUE,)
@@ -562,10 +562,7 @@ Figure2D <- ggplot(pathway_ILRUNgenesUninf24hr) +
   ylim(0,12)+
   scale_fill_viridis_c(direction = -1) +
   theme_set(theme_classic(base_size = 10)) +
-  theme(legend.key.size = unit(0.3, "cm"),
-    legend.position = c(.95, .45),
-    legend.justification = c("right", "top"),
-    legend.box.just = "right")+
+  theme(legend.key.size = unit(0.3, "cm"))+
   labs(y = "Fold enrichment",
        x = "KEGG or \n BIOCARTA Pathway",
        fill = "PValue")
@@ -658,12 +655,13 @@ cpm_infected$siRNA <- factor(cpm_infected$siRNA,levels =c("siNEG", "siILRUN"))
 
 Figure4A <- ggplot(cpm_infected, aes(x = timepoint, y = cpm)) +
   geom_boxplot(aes(fill = siRNA)) +
-  ylim(0, 2500)+
   theme_set(theme_classic(base_size = 10)) +
   scale_fill_manual(values = c("#F0E442", "#D55E00"))+
   theme(legend.key.size = unit(0.5, "cm"),
         legend.title = element_blank(),
-        legend.position = "bottom")+
+        legend.position = "top", 
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))+
   labs(tag = "A",
        x= "post-infection (h)",
        y = "Viral RNA \n (counts per million)")
@@ -676,7 +674,7 @@ ggsave(
   path = NULL,
   scale = 1,
   width = 8,
-  height = 6,
+  height = 5.5,
   units = "cm",
   dpi = 300,
   limitsize = TRUE)
@@ -687,9 +685,18 @@ ggsave(
 ```{r Figure 4B TCID50 vaidation of ILRUN proviral effect}
 
 
-
 ILRUN_titres <- read.csv("data/siILRUN_SARSCOV2.csv") %>%
     mutate(treatment = factor(treatment, levels = c("siNEG", "siILRUN", "pGFP", "pILRUN")))
+
+siILRUN_TCID50 <- ILRUN_titres %>% 
+  filter(treatment == "siNEG"| treatment == "siILRUN")
+siILRUN_TCID50_aov <- aov(TCID50 ~ treatment, data = siILRUN_TCID50)
+summary(siILRUN_TCID50_aov)
+
+siILRUN_TCID50 <- ILRUN_titres %>% 
+  filter(treatment == "pGFP"| treatment == "pILRUN")
+siILRUN_TCID50_aov <- aov(TCID50 ~ treatment, data = siILRUN_TCID50)
+summary(siILRUN_TCID50_aov)
 
 
 ###Summarise for plotting bar graph #####
@@ -701,23 +708,40 @@ ILRUN_titres_stats <- ILRUN_titres %>%
   mutate(treatment = factor(treatment, levels = c("siNEG", "siILRUN", "pGFP", "pILRUN")))
 
 ##### plot the data ################
-Figure3B <- ggplot(ILRUN_titres, aes(y= TCID50, x= treatment))+
-  geom_boxplot(fill = "grey")+
+Figure3B_violin <-ggplot() +
+  geom_violin(data=ILRUN_titres, aes(x=treatment, y=TCID50), fill = "grey") +
+  geom_point(data=ILRUN_titres_stats, aes(x=treatment, y=mean), size=2, color = "red") +
+  geom_errorbar(aes(x=ILRUN_titres_stats$treatment, ymax=ILRUN_titres_stats$upper, 
+                ymin=ILRUN_titres_stats$lower), stat='identity', width=.2, color = "red") +
   scale_y_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), 
                 labels = scales::trans_format("log10", scales::math_format(10^.x)))+
   theme_set(theme_classic(base_size = 10)) +
   labs(x = "",
        y = expression(paste(TCID[50], mL^-1)),
        tag = "B")
-  
+
+
+Figure3B_jitter <-ggplot() +
+  geom_jitter(data=ILRUN_titres, aes(x=treatment, y=TCID50), size = 2, width = 0.15) +
+  geom_point(data=ILRUN_titres_stats, aes(x=treatment, y=mean), size=2, color = "red") +
+  geom_errorbar(aes(x=ILRUN_titres_stats$treatment, ymax=ILRUN_titres_stats$upper, 
+                ymin=ILRUN_titres_stats$lower), stat='identity', width=.2, color = "red") +
+  scale_y_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), 
+                labels = scales::trans_format("log10", scales::math_format(10^.x)))+
+  theme_set(theme_classic(base_size = 10)) +
+  labs(x = "",
+       y = expression(paste(TCID[50], mL^-1)),
+       tag = "B")
+
+
 ggsave(
   filename = "results/Figure3B.TIFF",
-  plot = Figure3B,
+  plot = Figure3B_jitter,
   device = NULL,
   path = NULL,
   scale = 1,
   width = 10,
-  height = 6,
+  height = 5.5,
   units = "cm",
   dpi = 300,
   limitsize = TRUE)
@@ -725,6 +749,71 @@ ggsave(
 
 
 ```
+
+```{r Figure 4C ACE2 overexpression}
+
+  
+ACE2_TCID50 <- read.csv("data/ACE2_TCID50.csv") %>% 
+   mutate(ng_ACE2 = factor(ng_ACE2, levels = c("mock", "50ng", "100ng", "200ng")))
+
+###Summarise for plotting bar graph #####
+ACE2_TCID50_stats <- ACE2_TCID50 %>% 
+  group_by(ng_ACE2) %>% 
+  summarise(mean = mean(TCID50), sd = sd(TCID50)) %>% 
+  mutate(upper = mean + sd) %>% 
+  mutate(lower = mean - sd) %>%
+  mutate(ng_ACE2 = factor(ng_ACE2, levels = c("mock", "50ng", "100ng", "200ng")))
+
+##### plot the data ################
+Figure3C_violin <-ggplot() +
+  geom_violin(data=ACE2_TCID50, aes(x=ng_ACE2, y=TCID50), fill = "grey") +
+  geom_point(data=ACE2_TCID50_stats, aes(x=ng_ACE2, y=mean), size=2, color = "red") +
+  geom_errorbar(aes(x=ACE2_TCID50_stats$ng_ACE2, ymax=ACE2_TCID50_stats$upper, 
+                ymin=ACE2_TCID50_stats$lower), stat='identity', width=.2, color = "red") +
+  scale_y_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), 
+                labels = scales::trans_format("log10", scales::math_format(10^.x)))+
+  theme_set(theme_classic(base_size = 10)) +
+  labs(x = "",
+       y = expression(paste(TCID[50], mL^-1)),
+       tag = "B")
+
+
+Figure3C_jitter <-ggplot() +
+  geom_jitter(data=ACE2_TCID50, aes(x=ng_ACE2, y=TCID50), size = 2, width = 0.15) +
+  geom_point(data=ACE2_TCID50_stats, aes(x=ng_ACE2, y=mean), size=2, color = "red") +
+  geom_errorbar(aes(x=ACE2_TCID50_stats$ng_ACE2, ymax=ACE2_TCID50_stats$upper,
+                    ymin=ACE2_TCID50_stats$lower), stat='identity', width=.2, color = "red") +
+  scale_y_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), 
+                labels = scales::trans_format("log10", scales::math_format(10^.x)))+
+  theme_set(theme_classic(base_size = 10)) +
+  labs(x = "pACE2",
+       y = expression(paste(TCID[50], mL^-1)),
+       tag = "C")
+
+Figure3B_boxplot <-ggplot() +
+  geom_boxplot(data=ACE2_TCID50, aes(x=ng_ACE2, y=TCID50), fill = "grey")+
+  scale_y_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), 
+                labels = scales::trans_format("log10", scales::math_format(10^.x)))+
+  theme_set(theme_classic(base_size = 10)) +
+  labs(x = "",
+       y = expression(paste(TCID[50], mL^-1)),
+       tag = "C")
+
+
+ggsave(
+  filename = "results/Figure3C.TIFF",
+  plot = Figure3C_jitter,
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = 10,
+  height = 5.5,
+  units = "cm",
+  dpi = 300,
+  limitsize = TRUE)
+
+```
+
 
 ```{r Figure 4? PCA for infection}
 
@@ -763,7 +852,8 @@ ACE2 <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
   filter(timepoint == "24hr") %>%
   mutate(siRNA = str_c("si", siRNA)) %>% 
   mutate(siRNA = factor(siRNA, levels = c("siNEG", "siILRUN"))) %>% 
-  mutate(Infection = factor(Infection, levels = c("Uninfected", "Infected"))) %>% 
+  mutate(Infection = factor(Infection, levels = c("Uninfected", "Infected"))) %>%
+  mutate(Infection = str_to_lower(Infection)) %>% 
   ggplot(aes(x= Infection, y = expression)) +
   geom_boxplot(aes(fill = siRNA)) +
   scale_fill_manual(values = c("#F0E442", "#D55E00"))+
@@ -780,7 +870,8 @@ TMPRSS2 <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
   filter(gene == "TMPRSS2")%>%
   filter(timepoint == "24hr") %>%
   mutate(siRNA = factor(siRNA, levels = c("NEG", "ILRUN"))) %>%
-  mutate(Infection = factor(Infection, levels = c("Uninfected", "Infected"))) %>% 
+  mutate(Infection = factor(Infection, levels = c("Uninfected", "Infected"))) %>%
+  mutate(Infection = str_to_lower(Infection)) %>% 
   ggplot(aes(x= Infection, y = expression)) +
   geom_boxplot(aes(fill = siRNA)) +
   scale_fill_manual(values = c("#F0E442", "#D55E00"))+
@@ -792,11 +883,13 @@ TMPRSS2 <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
         plot.title = element_text(hjust = 0.5, face = "italic"))
 
 
+
 CTSL <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
   filter(gene == "CTSL")%>%
   filter(timepoint == "24hr") %>% 
   mutate(siRNA = factor(siRNA, levels = c("NEG", "ILRUN"))) %>%
-  mutate(Infection = factor(Infection, levels = c("Uninfected", "Infected"))) %>% 
+  mutate(Infection = factor(Infection, levels = c("Uninfected", "Infected"))) %>%
+  mutate(Infection = str_to_lower(Infection)) %>% 
   ggplot(aes(x= Infection, y = expression)) +
   geom_boxplot(aes(fill = siRNA)) +
   scale_fill_manual(values = c("#F0E442", "#D55E00"))+
@@ -811,8 +904,8 @@ CTSL <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
 legend <- get_legend(ACE2) 
 
 plot_4C <- plot_grid(ACE2 + theme(legend.position="none"),
-                  TMPRSS2 + theme(legend.position="none"),
-                  CTSL + theme(legend.position="none"), nrow = 1)
+                  TMPRSS2 + theme(legend.position="none", axis.title.y = element_blank()),
+                  CTSL + theme(legend.position="none", axis.title.y = element_blank()), nrow = 1, align = "v")
 
 Figure4C <- plot_grid(plot_4C, legend, rel_widths = c(3, .4))
 
@@ -852,6 +945,7 @@ AGT_NHBE_data <- Th2_cytokines %>%
 ILRUN_NHBE <- ggplot(ILRUN_NHBE_data, aes( x= stimulation, y = expn)) +
   geom_boxplot(aes(fill = stimulation)) +
   scale_fill_manual(values = c("#999999", "#009E73"))+
+  ylim(0,5000)+
   labs(title = "ILRUN", 
        x = "",
        y = "normalized counts")+
@@ -863,6 +957,7 @@ ILRUN_NHBE <- ggplot(ILRUN_NHBE_data, aes( x= stimulation, y = expn)) +
 ACE2_NHBE <- ggplot(ACE2_NHBE_data, aes( x= stimulation, y = expn)) +
   geom_boxplot(aes(fill = stimulation)) +
   scale_fill_manual(values = c("#999999", "#009E73"))+
+  ylim(0,350)+
   labs(title = "ACE2", 
        x = "",
        y = "normalized counts")+
@@ -873,6 +968,7 @@ ACE2_NHBE <- ggplot(ACE2_NHBE_data, aes( x= stimulation, y = expn)) +
 AGT_NHBE <- ggplot(AGT_NHBE_data, aes( x= stimulation, y = expn)) +
   geom_boxplot(aes(fill = stimulation)) +
   scale_fill_manual(values = c("#999999", "#009E73"))+
+  ylim(0,20 )+
   labs(title = "AGT", 
        x = "",
        y = "normalized counts")+
@@ -880,15 +976,10 @@ AGT_NHBE <- ggplot(AGT_NHBE_data, aes( x= stimulation, y = expn)) +
   theme(legend.key.size = unit(0.3, "cm"),
         plot.title = element_text(hjust = 0.5, face = "italic"))
 
+Figure4F <- plot_grid(ILRUN_NHBE + theme(legend.position="none"),
+                  ACE2_NHBE + theme(legend.position="none", axis.title.y = element_blank()), 
+                  AGT_NHBE + theme(legend.position="none", axis.title.y = element_blank()), nrow = 1, align = "v")
 
-legend_NHBE <- get_legend(ILRUN_NHBE) 
-
-plot_4F <- plot_grid(ILRUN_NHBE + theme(legend.position="none"),
-                  ACE2_NHBE + theme(legend.position="none"),
-                  AGT_NHBE + theme(legend.position="none"), nrow = 1)
-
-
-Figure4F <- plot_grid(plot_4F, legend_NHBE, rel_widths = c(3, .6))
 
 ggsave(
   filename = "results/Figure4F.TIFF",
@@ -901,7 +992,7 @@ ggsave(
   units = "cm",
   dpi = 300,
   limitsize = TRUE)
-
+######################################
 
 
 ```
