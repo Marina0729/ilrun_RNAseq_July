@@ -1,0 +1,40 @@
+---
+title: "ILRUN in CAD"
+author: "Marina Alexander"
+date: "17/09/2020"
+output:
+  pdf_document: default
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+
+# remind R where to look for libraries
+.libPaths(c("C:/Users/ale097/Data School/Packages"))
+# load libraries
+library(tidyverse)
+library(dplyr)
+library(knitr)
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = 'center'
+)
+```
+
+```{r KEGG genes in CAD pathways}
+
+##show only significant immune genes ###
+
+CAD_GWAS <- read.csv("data/CAD_GWAS.csv", header = TRUE) %>% 
+  dplyr::rename( GENE_ID = CAD_risk_loci)
+
+ILRUN_DE_genes <- read.csv("results/Supp1_ILRUNgenesUninf24hrs.csv") %>%
+  inner_join(CAD_GWAS, by = "GENE_ID" )
+
+
+```
+

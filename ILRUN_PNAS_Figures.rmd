@@ -510,9 +510,9 @@ Figure2C <- ggplot(DEgene_validation, aes(y= log2FoldChange, x=GENE_ID, fill = d
   geom_bar(stat= "Identity", color= "black", position = position_dodge()) +
   facet_wrap(~ assay, dir = "h")+
   geom_errorbar(aes(ymin = lower, ymax = upper), width =0.2, position = position_dodge(0.9)) +
-  geom_text(aes(label = padj_up),position=position_dodge(width=0.9), vjust=-2.8, size = 5)+
-  geom_text(aes(label = padj_down),position=position_dodge(width=0.9), vjust=2.7, size = 5)+
-  ylim(-5, 7)+
+  geom_text(aes(label = padj_up),position=position_dodge(width=0.9), vjust=-1.8, size = 5)+
+  geom_text(aes(label = padj_down),position=position_dodge(width=0.9), vjust=2.0, size = 5)+
+  ylim(-3, 3)+
   scale_fill_manual(values = dir)+
   theme_set(theme_classic(base_size = 11.5))+
   theme(legend.position = "none")+
@@ -544,7 +544,9 @@ pathway_ILRUNgenesUninf24hr <- read.csv("data/ILRUNgenes_Uninf_24hrs_david_defau
   arrange(PValue) %>%
   filter(Category == "BIOCARTA" | Category == "KEGG_PATHWAY") %>% 
   filter(PValue < 0.01) %>% 
-  separate(Term, c("code", "Pathway"), sep = ":")
+  separate(Term, c("code", "Pathway"), sep = ":") %>% 
+  select(-Cluster,-Enrichment ) %>% 
+  unique()
 
 gene_ontology_ILRUNgenesUninf24hr <- read.csv("data/ILRUNgenes_Uninf_24hrs_david_default_output.csv") %>% 
   as_tibble() %>%
@@ -657,8 +659,7 @@ Figure4A <- ggplot(cpm_infected, aes(x = timepoint, y = cpm)) +
   geom_boxplot(aes(fill = siRNA)) +
   theme_set(theme_classic(base_size = 10)) +
   scale_fill_manual(values = c("#F0E442", "#D55E00"))+
-  theme(legend.key.size = unit(0.5, "cm"),
-        legend.title = element_blank(),
+  theme(legend.title = element_blank(),
         legend.position = "top", 
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,-10,-10,-10))+
@@ -673,8 +674,8 @@ ggsave(
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 8,
-  height = 5.5,
+  width = 9,
+  height =7.33,
   units = "cm",
   dpi = 300,
   limitsize = TRUE)
@@ -740,8 +741,8 @@ ggsave(
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 10,
-  height = 5.5,
+  width =9,
+  height = 7.33,
   units = "cm",
   dpi = 300,
   limitsize = TRUE)
@@ -759,15 +760,15 @@ ACE2_TCID50 <- read.csv("data/ACE2_TCID50.csv") %>%
 ###Summarise for plotting bar graph #####
 ACE2_TCID50_stats <- ACE2_TCID50 %>% 
   group_by(ng_ACE2) %>% 
-  summarise(mean = mean(TCID50), sd = sd(TCID50)) %>% 
-  mutate(upper = mean + sd) %>% 
-  mutate(lower = mean - sd) %>%
+  summarise(mean_TCID50 = mean(TCID50), sd_TCID50 = sd(TCID50)) %>% 
+  mutate(upper = mean_TCID50 + sd_TCID50) %>% 
+  mutate(lower = mean_TCID50 - sd_TCID50) %>%
   mutate(ng_ACE2 = factor(ng_ACE2, levels = c("mock", "50ng", "100ng", "200ng")))
 
 ##### plot the data ################
 Figure3C_violin <-ggplot() +
   geom_violin(data=ACE2_TCID50, aes(x=ng_ACE2, y=TCID50), fill = "grey") +
-  geom_point(data=ACE2_TCID50_stats, aes(x=ng_ACE2, y=mean), size=2, color = "red") +
+  geom_point(data=ACE2_TCID50_stats, aes(x=ng_ACE2, y=mean_TCID50), size=2, color = "red") +
   geom_errorbar(aes(x=ACE2_TCID50_stats$ng_ACE2, ymax=ACE2_TCID50_stats$upper, 
                 ymin=ACE2_TCID50_stats$lower), stat='identity', width=.2, color = "red") +
   scale_y_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), 
@@ -777,10 +778,14 @@ Figure3C_violin <-ggplot() +
        y = expression(paste(TCID[50], mL^-1)),
        tag = "B")
 
+Figure3C_jitter <- ggplot()+
+  geom_jitter(data = ACE2_TCID50, aes(x=ng_ACE2, Y = TCID50), size = 2, width = 0.15)+
+  geom_point(data = ACE2_TCID50_stats, aes(x=ng_ACE2, y=mean_TCID50), size =2, color = "red")+
+  geom_errorbar(aes(x=ACE2_TCID50_stats$ng_ACE2, ymax = ACE2_TCID50_stats$upper, ymin =ACE2_TCID50_stats$lower), stat = "identity", width = 0.2, color = "red")
 
 Figure3C_jitter <-ggplot() +
   geom_jitter(data=ACE2_TCID50, aes(x=ng_ACE2, y=TCID50), size = 2, width = 0.15) +
-  geom_point(data=ACE2_TCID50_stats, aes(x=ng_ACE2, y=mean), size=2, color = "red") +
+  geom_point(data=ACE2_TCID50_stats, aes(x=ng_ACE2, y=mean_TCID50), size=2, color = "red") +
   geom_errorbar(aes(x=ACE2_TCID50_stats$ng_ACE2, ymax=ACE2_TCID50_stats$upper,
                     ymin=ACE2_TCID50_stats$lower), stat='identity', width=.2, color = "red") +
   scale_y_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), 
@@ -799,6 +804,18 @@ Figure3B_boxplot <-ggplot() +
        y = expression(paste(TCID[50], mL^-1)),
        tag = "C")
 
+ggsave(
+  filename = "results/Figure3C_scaled.PNG",
+  plot = Figure3C_jitter,
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = 10,
+  height = 5.5,
+  units = "cm",
+  dpi = 300,
+  limitsize = TRUE)
+
 
 ggsave(
   filename = "results/Figure3C.TIFF",
@@ -807,7 +824,7 @@ ggsave(
   path = NULL,
   scale = 1,
   width = 10,
-  height = 5.5,
+  height = 7.33,
   units = "cm",
   dpi = 300,
   limitsize = TRUE)
@@ -851,9 +868,9 @@ ACE2 <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
   filter(gene == "ACE2")%>%
   filter(timepoint == "24hr") %>%
   mutate(siRNA = str_c("si", siRNA)) %>% 
-  mutate(siRNA = factor(siRNA, levels = c("siNEG", "siILRUN"))) %>% 
-  mutate(Infection = factor(Infection, levels = c("Uninfected", "Infected"))) %>%
   mutate(Infection = str_to_lower(Infection)) %>% 
+  mutate(Infection = factor(Infection, levels = c("uninfected", "infected"))) %>%
+  mutate(siRNA = factor(siRNA, levels = c("siNEG", "siILRUN"))) %>% 
   ggplot(aes(x= Infection, y = expression)) +
   geom_boxplot(aes(fill = siRNA)) +
   scale_fill_manual(values = c("#F0E442", "#D55E00"))+
@@ -869,9 +886,10 @@ ACE2 <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
 TMPRSS2 <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
   filter(gene == "TMPRSS2")%>%
   filter(timepoint == "24hr") %>%
-  mutate(siRNA = factor(siRNA, levels = c("NEG", "ILRUN"))) %>%
-  mutate(Infection = factor(Infection, levels = c("Uninfected", "Infected"))) %>%
+  mutate(siRNA = str_c("si", siRNA)) %>% 
   mutate(Infection = str_to_lower(Infection)) %>% 
+  mutate(Infection = factor(Infection, levels = c("uninfected", "infected"))) %>%
+  mutate(siRNA = factor(siRNA, levels = c("siNEG", "siILRUN"))) %>%
   ggplot(aes(x= Infection, y = expression)) +
   geom_boxplot(aes(fill = siRNA)) +
   scale_fill_manual(values = c("#F0E442", "#D55E00"))+
@@ -886,10 +904,11 @@ TMPRSS2 <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
 
 CTSL <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
   filter(gene == "CTSL")%>%
-  filter(timepoint == "24hr") %>% 
-  mutate(siRNA = factor(siRNA, levels = c("NEG", "ILRUN"))) %>%
-  mutate(Infection = factor(Infection, levels = c("Uninfected", "Infected"))) %>%
+  filter(timepoint == "24hr") %>%
+  mutate(siRNA = str_c("si", siRNA)) %>% 
   mutate(Infection = str_to_lower(Infection)) %>% 
+  mutate(Infection = factor(Infection, levels = c("uninfected", "infected"))) %>%
+  mutate(siRNA = factor(siRNA, levels = c("siNEG", "siILRUN"))) %>%
   ggplot(aes(x= Infection, y = expression)) +
   geom_boxplot(aes(fill = siRNA)) +
   scale_fill_manual(values = c("#F0E442", "#D55E00"))+
@@ -915,8 +934,8 @@ ggsave(
   device = NULL,
   path = NULL,
   scale = 1,
-  width = 16 ,
-  height = 5.5,
+  width = 17 ,
+  height = 7.33,
   units = "cm",
   dpi = 300,
   limitsize = TRUE,)
@@ -988,10 +1007,11 @@ ggsave(
   path = NULL,
   scale = 1,
   width = 16,
-  height = 5.5,
+  height = 7.33,
   units = "cm",
   dpi = 300,
   limitsize = TRUE)
+
 ######################################
 
 
@@ -1027,6 +1047,81 @@ ILRUNgenesInf_6hrs <- read_csv("results/sigILRUNgenesInf6hr_LT07_rev.csv")  %>%
   select(-X1) %>% 
   arrange(padj)
 write.csv(ILRUNgenesInf_6hrs, "results/Supp1_ILRUNgenesInf6hrs.csv")
+
+```
+
+
+```{r SRA submission }
+
+SRA_submission <- read.csv("data/ilrun_metadata_siRNA_rev.csv") %>%
+  mutate(Sample = str_remove(Sample, "_rev.intersect")) %>%
+  unite("SRA_sample", Sample, Condition, sep = "_") %>% 
+  separate(SRA_sample, c("number", "lane", "SARS", "knockdown", "time")) %>% 
+  unite(library, number, lane, sep = "_")
+
+write.csv(SRA_submission, "results/SRA_submission_metadata.csv")
+
+```
+
+```{r NR3C1 expression in ILRUN knockdown cells }
+
+
+
+NR3C1 <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
+  filter(gene == "NR3C1") %>%
+  filter(timepoint == "24hr") %>%
+  mutate(siRNA = str_c("si", siRNA)) %>% 
+  mutate(siRNA = factor(siRNA, levels = c("siNEG", "siILRUN"))) %>%
+  mutate(Infection = str_to_lower(Infection)) %>% 
+  mutate(Infection = factor(Infection, levels = c("uninfected", "infected"))) %>%
+  ggplot(aes(x= Infection, y = expression)) +
+  geom_boxplot(aes(fill = siRNA)) +
+  scale_fill_manual(values = c("#F0E442", "#D55E00"))+
+  labs(x = "",
+       y = "normalized counts",
+       title = "NR3C1")+
+  theme_set(theme_classic(base_size = 10))+
+  theme(legend.key.size = unit(0.3, "cm"),
+        legend.title = element_blank(),
+        plot.title = element_text(hjust = 0.5, face = "italic"))
+
+
+IL8 <- read.csv("results/DESeq2_ilrun_siRNA_LT07_rev_expression.csv") %>%
+  filter(gene == "IL8") %>%
+  filter(timepoint == "24hr") %>%
+  mutate(siRNA = str_c("si", siRNA)) %>% 
+  mutate(siRNA = factor(siRNA, levels = c("siNEG", "siILRUN"))) %>%
+  mutate(Infection = str_to_lower(Infection)) %>%
+  mutate(Infection = factor(Infection, levels = c("uninfected", "infected"))) %>%
+  ggplot(aes(x= Infection, y = expression)) +
+  geom_boxplot(aes(fill = siRNA)) +
+  scale_fill_manual(values = c("#F0E442", "#D55E00"))+
+  labs(x = "",
+       y = "normalized counts",
+       title = "IL8")+
+  theme_set(theme_classic(base_size = 10))+
+  theme(legend.key.size = unit(0.3, "cm"),
+        legend.title = element_blank(),
+        plot.title = element_text(hjust = 0.5, face = "italic"))
+
+legend <- get_legend(ACE2) 
+
+plot_severity <- plot_grid(NR3C1 + theme(legend.position="none"),
+                  IL8 + theme(legend.position="none", axis.title.y = element_blank()), nrow = 1, align = "v")
+
+COVID_severity <- plot_grid(plot_severity , legend, rel_widths = c(3, .4))
+
+ggsave(
+  filename = "results/GR_genes_severity.PNG",
+  plot = COVID_severity,
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = 16,
+  height = 8,
+  units = "cm",
+  dpi = 300,
+  limitsize = TRUE)
 
 ```
 

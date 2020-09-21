@@ -58,6 +58,7 @@ cpm <- apply(df, 2, function(x) (x/sum(x))*1000000)
 keep <- rowSums( cpm >= 1 ) >=4
 df_filtered <- df[ keep, ]
 
+
 dim(df_filtered)
 
 
@@ -799,7 +800,7 @@ ILRUNgenesUninf24hr_metadata <- read_csv("data/ilrun_metadata_siRNA_LT07_rev.csv
   mutate(Name = str_extract(Sample, "^...."))
 
 #join with the counts data 
-ILRUNgenesUninf24hr_expression <- read_csv("results/DESeq2_ilrun_siRNA_all_normalized_counts_LT07_rev.csv") %>% 
+ILRUNgenesUninf24hr_expression <- read_csv("results/DESeq2_ilrun_siRNA_all_normalized_counts_LT07_rev.csv") %>%
   rename(gene_locus = X1) %>%
   gather(Sample, expression, -gene_locus) %>%
   filter(str_detect(Sample, 'L001')) %>% 
@@ -849,18 +850,18 @@ write.csv(forplotting_ILRUNgenesUninf24hr, "results/ILRUNgenesUninf24hr_forplott
 tibble_ILRUNgenesUninf24hr <- ILRUNgenesUninf24hr %>%
   as.data.frame() %>% 
   rownames_to_column() %>% 
-  separate(rowname, c("gene", "gene1"), sep = "_") %>% 
+  separate(rowname, c("value", "gene1"), sep = "_") %>% 
   select(-gene1) %>% 
-  mutate(gene = str_replace(gene, "C6orf106", "ILRUN")) %>% 
-  mutate(gene = str_replace(gene, "ACKR3", "CXCR7")) %>%
-  mutate(gene = str_replace(gene, "CHUK","IkBKA")) %>%
-  mutate(gene = str_replace(gene, "TNFSF10", "TRAIL")) %>% 
-  mutate(gene = str_replace(gene, "EP300", "P300"))
+  mutate(value = str_replace(value, "C6orf106", "ILRUN")) %>% 
+  mutate(value = str_replace(value, "ACKR3", "CXCR7")) %>%
+  mutate(value = str_replace(value, "CHUK","IkBKA")) %>%
+  mutate(value = str_replace(value, "TNFSF10", "TRAIL")) %>% 
+  mutate(value = str_replace(value, "EP300", "P300"))
 
 tibble_ILRUNgenesUninf24hr_name <- ILRUNgenesUninf24hr %>%
   as.data.frame() %>% 
   rownames_to_column() %>% 
-  separate(rowname, c("gene", "gene1"), sep = "_") %>% 
+  separate(rowname, c("value", "gene1"), sep = "_") %>% 
   select(-gene1) %>% 
   arrange(padj)
 
@@ -877,11 +878,9 @@ immune_genes_Uninf24hr <- c('ISG15','IL6R','TLR7', 'STAT4', 'SOCS2','IL1B','IL15
                            'TGFB1', 'CCR1', 'CCR6', 'IL8', 'IFIT3', 'IL18', 'IFIT3', 'CXCR7', 'GDF11', 'LIFR', 'MMP14', 'THBS1', 'VAV3', 'PRKCQ',
                            'IkBKA', 'ILRUN', 'VIM', 'FCGR2', "P300", "FCGRT", "LAMC1", "TGB1","LAMC1", "SLC1A3", "NFE2L3", "ELOVL5",  "DPYSL3" ) %>%
   as_tibble() %>% 
-  rename(gene = value) %>% 
-  left_join(tibble_ILRUNgenesUninf24hr , by = "gene") %>% 
+  left_join(tibble_ILRUNgenesUninf24hr , by = "value") %>% 
   filter(padj <0.05 ) %>% 
-  filter(log2FoldChange >1 | log2FoldChange < -1) 
-
+  filter(log2FoldChange >1 | log2FoldChange < -1)
 
 #########################################
 
